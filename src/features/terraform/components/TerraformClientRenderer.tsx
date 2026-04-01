@@ -21,7 +21,7 @@ export default function TerraformClientRenderer({ dirData, rootX = 0, rootY = 0 
       if (!context) {
         return text.length * 9.5;
       }
-      return context.measureText(text + "/").width; // adding suffix /
+      return context.measureText(text).width;
     };
 
     const drawing = new TerraformDrawing(dirData, measureTextWidth);

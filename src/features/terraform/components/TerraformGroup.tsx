@@ -49,25 +49,14 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
     );
   }
 
-  // === Terraform Variable / Output Box ===
-  if (node.type === "tf-var" || node.type === "tf-out") {
-    return (
-      <g transform={`translate(${rootX}, ${rootY})`}>
-        <rect width={node.width} height={node.height} fill="#f8fafc" stroke="#cbd5e1" strokeWidth={1} />
-        <text x={10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
-          {node.label}
-        </text>
-      </g>
-    );
-  }
-
-  // === Terraform Resource Box (3 cells: RSC | type | name) ===
-  if (node.type === "tf-rsc") {
-    // The label is passed as "type__name__typeWidth" from TerraformDrawing
+  // === Terraform Unified Block List Box ===
+  if (node.type === "tf-block-list") {
+    // The label is passed as "tag__type__name__typeWidth"
     const parts = node.label.split("__");
-    const rscType = parts[0] || "";
-    const rscName = parts[1] || "";
-    const typeWidth = parts[2] ? parseFloat(parts[2]) : 150;
+    const activeTag = parts[0] || "UNK";
+    const rscType = parts[1] || "";
+    const rscName = parts[2] || "";
+    const typeWidth = parts[3] ? parseFloat(parts[3]) : 150;
     
     const tagWidth = 45;
 
@@ -76,22 +65,33 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
         {/* Outer box */}
         <rect width={node.width} height={node.height} fill="#ffffff" stroke="#94a3b8" strokeWidth={1} />
         
-        {/* RSC Tag Background (Optional slight shading) */}
+        {/* Tag Background */}
         <rect width={tagWidth} height={node.height} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1} />
         <text x={8} y={18} fill="#475569" fontSize="12" fontFamily="Arial, sans-serif">
-          RSC
+          {activeTag}
         </text>
 
-        {/* Type Cell */}
-        <rect x={tagWidth} y={0} width={typeWidth} height={node.height} fill="#ffffff" stroke="#94a3b8" strokeWidth={1} />
-        <text x={tagWidth + 10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
-          {rscType}
-        </text>
+        {rscType ? (
+          <>
+            {/* Type Cell (Middle) */}
+            <rect x={tagWidth} y={0} width={typeWidth} height={node.height} fill="#ffffff" stroke="#94a3b8" strokeWidth={1} />
+            <text x={tagWidth + 10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
+              {rscType}
+            </text>
 
-        {/* Name Cell */}
-        <text x={tagWidth + typeWidth + 10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
-          {rscName}
-        </text>
+            {/* Name Cell (Right) */}
+            <text x={tagWidth + typeWidth + 10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
+              {rscName}
+            </text>
+          </>
+        ) : (
+          <>
+            {/* Name Cell only (No Middle Type cell) */}
+            <text x={tagWidth + 10} y={18} fill="#334155" fontSize="12" fontFamily="Arial, sans-serif">
+              {rscName}
+            </text>
+          </>
+        )}
       </g>
     );
   }

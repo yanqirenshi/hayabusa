@@ -1,25 +1,18 @@
 import { IDataClass } from "@/core/interfaces";
 
-// Individual components parsed from `.tf` files
-export interface TfVariable {
-  name: string;
-}
-
-export interface TfOutput {
-  name: string;
-}
-
-export interface TfResource {
-  type: string;
+// Unified component for parsed Terraform blocks
+export interface TfItem {
+  blockType: "resource" | "data" | "output" | "variable" | "locals" | "module";
+  type?: string; 
   name: string;
 }
 
 export class TerraformFile {
   constructor(
     public name: string,
-    public variables: TfVariable[] = [],
-    public resources: TfResource[] = [],
-    public outputs: TfOutput[] = []
+    public variables: TfItem[] = [],
+    public resources: TfItem[] = [],
+    public outputs: TfItem[] = []
   ) {}
 }
 

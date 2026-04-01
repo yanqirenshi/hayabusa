@@ -2,7 +2,7 @@
 
 import * as fs from "fs/promises";
 import * as path from "path";
-import { TerraformDirectory, TerraformFile, TfVariable, TfResource, TfOutput } from "../data/TerraformData";
+import { TerraformDirectory, TerraformFile } from "../data/TerraformData";
 
 /**
  * Basic Regex parser for Terraform contents
@@ -10,23 +10,49 @@ import { TerraformDirectory, TerraformFile, TfVariable, TfResource, TfOutput } f
 function parseTerraformFileContent(filename: string, content: string): TerraformFile {
   const tfFile = new TerraformFile(filename);
 
+  let match;
+  
   // Parse variables
   const varRegex = /variable\s+"([^"]+)"/g;
-  let match;
   while ((match = varRegex.exec(content)) !== null) {
-    tfFile.variables.push({ name: match[1] });
+    tfFile.variables.push({ blockType: "variable", name: match[1] });
   }
 
   // Parse outputs
   const outRegex = /output\s+"([^"]+)"/g;
   while ((match = outRegex.exec(content)) !== null) {
-    tfFile.outputs.push({ name: match[1] });
+    tfFile.outputs.push({ blockType: "output", name: match[1] });
   }
 
-  // Parse resources & data blocks
-  const rscRegex = /(?:resource|data)\s+"([^"]+)"\s+"([^"]+)"/g;
+  // Parse resources
+  const rscRegex = /resource\s+"([^"]+)"\s+"([^"]+)"/g;
   while ((match = rscRegex.exec(content)) !== null) {
-    tfFile.resources.push({ type: match[1], name: match[2] });
+    tfFile.resources.push({ blockType: "resource", type: match[1], name: match[2] });
+  }
+
+  // Parse data
+  const dataRegex = /data\s+"([^"]+)"\s+"([^"]+)"/g;
+  while ((match = dataRegex.exec(content)) !== null) {
+    tfFile.resources.push({ blockType: "data", type: match[1], name: match[2] });
+  }
+
+  // Parse module
+  const modRegex = /module\s+"([^"]+)"/g;
+  while ((match = modRegex.exec(content)) !== null) {
+    tfFile.resources.push({ blockType: "module", type: "module", name: match[1] });
+  }
+
+  // Parse locals
+  // Match `locals { ... }` blocks (can be multiline)
+  const localsBlockRegex = /locals\s*{([^}]+)}/g;
+  while ((match = localsBlockRegex.exec(content)) !== null) {
+    const blockContent = match[1];
+    // Find lines resembling `key = value`
+    const localKeyRegex = /^\s*([a-zA-Z0-9_-]+)\s*=/gm;
+    let localMatch;
+    while ((localMatch = localKeyRegex.exec(blockContent)) !== null) {
+      tfFile.resources.push({ blockType: "locals", name: localMatch[1] });
+    }
   }
 
   return tfFile;

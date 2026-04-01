@@ -54,8 +54,8 @@ export class TerraformDrawing implements IDrawingClass {
     // Helper to generate file nodes with items
     const buildFileNode = (
       file: TerraformFile, 
-      items: { type?: string; name: string }[], 
-      rendererType: "tf-var" | "tf-rsc" | "tf-out"
+      items: { blockType: "resource" | "data" | "output" | "variable" | "locals" | "module"; type?: string; name: string }[], 
+      rendererType: "tf-block-list" // Unified renderer
     ): IDrawingNode | null => {
       if (items.length === 0) return null;
 
@@ -81,13 +81,24 @@ export class TerraformDrawing implements IDrawingClass {
           const nameBaseWidth = this.getTextWidth(item.name);
           textLen = 45 + maxTypeWidth + nameBaseWidth + 25;
         } else {
+          // 45(tag) + safe name cell width
           const nameBaseWidth = this.getTextWidth(item.name);
-          textLen = nameBaseWidth + 25;
+          textLen = 45 + nameBaseWidth + 25;
         }
 
         if (textLen > maxItemWidth) {
           maxItemWidth = textLen;
         }
+
+        const tagMap: Record<string, string> = {
+          resource: "RSC",
+          data: "DAT",
+          output: "OUT",
+          variable: "VAL",
+          locals: "LOC",
+          module: "MOD"
+        };
+        const activeTag = tagMap[item.blockType] || "UNK";
 
         itemNodes.push({
           id: `${dir.path}-${file.name}-${item.name}-${rendererType}`,
@@ -95,7 +106,8 @@ export class TerraformDrawing implements IDrawingClass {
           y: currentY,
           width: 0, // placeholder, updated next
           height: CONFIG.itemHeight,
-          label: item.type ? `${item.type}__${item.name}__${maxTypeWidth}` : item.name, 
+          // Format: tag__type__name__typeWidth
+          label: `${activeTag}__${item.type || ""}__${item.name}__${maxTypeWidth}`, 
           type: rendererType,
         });
 
@@ -123,13 +135,13 @@ export class TerraformDrawing implements IDrawingClass {
 
     // Distribute files to columns
     for (const file of dir.files) {
-      const varFileNode = buildFileNode(file, file.variables, "tf-var");
+      const varFileNode = buildFileNode(file, file.variables, "tf-block-list");
       if (varFileNode) columns[0].files.push(varFileNode);
 
-      const rscFileNode = buildFileNode(file, file.resources, "tf-rsc");
+      const rscFileNode = buildFileNode(file, file.resources, "tf-block-list");
       if (rscFileNode) columns[1].files.push(rscFileNode);
 
-      const outFileNode = buildFileNode(file, file.outputs, "tf-out");
+      const outFileNode = buildFileNode(file, file.outputs, "tf-block-list");
       if (outFileNode) columns[2].files.push(outFileNode);
     }
 
