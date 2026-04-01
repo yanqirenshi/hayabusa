@@ -103,12 +103,21 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
       results.forEach((data, index) => {
         if (data && data.length > 0) {
-          objectGroups.push(
-            new SnowflakeObjectGroup(
-              targetObjectTypes[index].label,
-              data.map((item: any) => new SnowflakeObject(item.name || item.NAME, targetObjectTypes[index].label))
-            )
-          );
+          // 自動生成されるデフォルト・システムオブジェクト（SYSTEM$... やビルトイン関数）を除外する
+          const filteredData = data.filter((item: any) => {
+            const itemName = item.name || item.NAME || "";
+            const isBuiltin = item.is_builtin || item.IS_BUILTIN || "N";
+            return !itemName.toUpperCase().startsWith("SYSTEM$") && isBuiltin !== "Y";
+          });
+
+          if (filteredData.length > 0) {
+            objectGroups.push(
+              new SnowflakeObjectGroup(
+                targetObjectTypes[index].label,
+                filteredData.map((item: any) => new SnowflakeObject(item.name || item.NAME, targetObjectTypes[index].label))
+              )
+            );
+          }
         }
       });
 
