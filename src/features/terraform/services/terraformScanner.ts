@@ -15,52 +15,58 @@ function parseTerraformFileContent(filename: string, content: string): Terraform
   // Parse variables
   const varRegex = /variable\s+"([^"]+)"/g;
   while ((match = varRegex.exec(content)) !== null) {
-    tfFile.variables.push({ blockType: "variable", name: match[1] });
+    tfFile.variables.push({ blockType: "variable", index: match.index, name: match[1] });
   }
 
   // Parse outputs
   const outRegex = /output\s+"([^"]+)"/g;
   while ((match = outRegex.exec(content)) !== null) {
-    tfFile.outputs.push({ blockType: "output", name: match[1] });
+    tfFile.outputs.push({ blockType: "output", index: match.index, name: match[1] });
   }
 
   // Parse resources
   const rscRegex = /resource\s+"([^"]+)"\s+"([^"]+)"/g;
   while ((match = rscRegex.exec(content)) !== null) {
-    tfFile.resources.push({ blockType: "resource", type: match[1], name: match[2] });
+    tfFile.resources.push({ blockType: "resource", index: match.index, type: match[1], name: match[2] });
   }
 
   // Parse data
   const dataRegex = /data\s+"([^"]+)"\s+"([^"]+)"/g;
   while ((match = dataRegex.exec(content)) !== null) {
-    tfFile.resources.push({ blockType: "data", type: match[1], name: match[2] });
+    tfFile.resources.push({ blockType: "data", index: match.index, type: match[1], name: match[2] });
   }
 
   // Parse module
   const modRegex = /module\s+"([^"]+)"/g;
   while ((match = modRegex.exec(content)) !== null) {
-    tfFile.resources.push({ blockType: "module", type: "module", name: match[1] });
+    tfFile.resources.push({ blockType: "module", index: match.index, type: "module", name: match[1] });
   }
 
   // Parse provider
   const provRegex = /provider\s+"([^"]+)"/g;
   while ((match = provRegex.exec(content)) !== null) {
-    // Provider just has a type (like aws, snowflake) which we can store as 'name' for a 2-column layout [ PRO | aws ]
-    tfFile.resources.push({ blockType: "provider", name: match[1] });
+    tfFile.resources.push({ blockType: "provider", index: match.index, name: match[1] });
   }
 
   // Parse locals
-  // Match `locals { ... }` blocks (can be multiline)
   const localsBlockRegex = /locals\s*{([^}]+)}/g;
   while ((match = localsBlockRegex.exec(content)) !== null) {
     const blockContent = match[1];
-    // Find lines resembling `key = value`
+    const baseIndex = match.index; // Absolute index of the block Start
+    
+    // Find lines resembling `key = value` inside the local block
     const localKeyRegex = /^\s*([a-zA-Z0-9_-]+)\s*=/gm;
     let localMatch;
     while ((localMatch = localKeyRegex.exec(blockContent)) !== null) {
-      tfFile.resources.push({ blockType: "locals", name: localMatch[1] });
+      // Calculate absolute index
+      tfFile.resources.push({ blockType: "locals", index: baseIndex + localMatch.index, name: localMatch[1] });
     }
   }
+
+  // Sort universally by absolute appearance index in the file
+  tfFile.variables.sort((a, b) => a.index - b.index);
+  tfFile.outputs.sort((a, b) => a.index - b.index);
+  tfFile.resources.sort((a, b) => a.index - b.index);
 
   return tfFile;
 }
