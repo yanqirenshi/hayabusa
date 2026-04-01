@@ -42,6 +42,13 @@ function parseTerraformFileContent(filename: string, content: string): Terraform
     tfFile.resources.push({ blockType: "module", type: "module", name: match[1] });
   }
 
+  // Parse provider
+  const provRegex = /provider\s+"([^"]+)"/g;
+  while ((match = provRegex.exec(content)) !== null) {
+    // Provider just has a type (like aws, snowflake) which we can store as 'name' for a 2-column layout [ PRO | aws ]
+    tfFile.resources.push({ blockType: "provider", name: match[1] });
+  }
+
   // Parse locals
   // Match `locals { ... }` blocks (can be multiline)
   const localsBlockRegex = /locals\s*{([^}]+)}/g;

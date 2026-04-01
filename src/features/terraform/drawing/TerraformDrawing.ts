@@ -54,7 +54,7 @@ export class TerraformDrawing implements IDrawingClass {
     // Helper to generate file nodes with items
     const buildFileNode = (
       file: TerraformFile, 
-      items: { blockType: "resource" | "data" | "output" | "variable" | "locals" | "module"; type?: string; name: string }[], 
+      items: { blockType: "resource" | "data" | "output" | "variable" | "locals" | "module" | "provider"; type?: string; name: string }[], 
       rendererType: "tf-block-list" // Unified renderer
     ): IDrawingNode | null => {
       if (items.length === 0) return null;
@@ -96,7 +96,8 @@ export class TerraformDrawing implements IDrawingClass {
           output: "OUT",
           variable: "VAL",
           locals: "LOC",
-          module: "MOD"
+          module: "MOD",
+          provider: "PRO"
         };
         const activeTag = tagMap[item.blockType] || "UNK";
 

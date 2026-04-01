@@ -2,7 +2,7 @@ import { IDataClass } from "@/core/interfaces";
 
 // Unified component for parsed Terraform blocks
 export interface TfItem {
-  blockType: "resource" | "data" | "output" | "variable" | "locals" | "module";
+  blockType: "resource" | "data" | "output" | "variable" | "locals" | "module" | "provider";
   type?: string; 
   name: string;
 }
