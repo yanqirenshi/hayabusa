@@ -1,8 +1,9 @@
 import React from "react";
 import MainCanvasRenderer from "@/components/MainCanvasRenderer";
 import SnowflakeClientRenderer from "@/features/snowflake/components/SnowflakeClientRenderer";
+import SnowflakeRoleRenderer from "@/features/snowflake/components/SnowflakeRoleRenderer";
 import TerraformClientRenderer from "@/features/terraform/components/TerraformClientRenderer";
-import { fetchSnowflakeData } from "@/features/snowflake/services/snowflakeFetcher";
+import { fetchSnowflakeData, fetchSnowflakeRoles } from "@/features/snowflake/services/snowflakeFetcher";
 import { fetchTerraformStructure } from "@/features/terraform/services/terraformScanner";
 
 export default async function Home() {
@@ -25,6 +26,15 @@ export default async function Home() {
     console.error("Terraform scan error:", error);
   }
 
+  // 4. Fetch Snowflake role hierarchy
+  let roleData = null;
+  try {
+    const rawRoleData = await fetchSnowflakeRoles();
+    roleData = JSON.parse(JSON.stringify(rawRoleData));
+  } catch (error) {
+    console.error("Snowflake role fetch error:", error);
+  }
+
   return (
     <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
       <h1 style={{ fontWeight: 600, fontSize: "2rem", marginBottom: "0.5rem" }}>
@@ -40,10 +50,15 @@ export default async function Home() {
           Currently hosts Snowflake and Terraform structures side-by-side.
         */}
         <MainCanvasRenderer width={3000} height={2000}>
-           {/* Snowflake goes on the left (x=0) */}
+           {/* Snowflake DB objects: left (x=0) */}
            <SnowflakeClientRenderer dbData={dbData} />
 
-           {/* Terraform goes on the right (x=1500) if available */}
+           {/* Snowflake Role hierarchy: below DB objects (y=750) */}
+           {roleData && (
+             <SnowflakeRoleRenderer roleData={roleData} rootX={0} rootY={750} />
+           )}
+
+           {/* Terraform: right column (x=1500) */}
            {terraformData && (
              <TerraformClientRenderer dirData={terraformData} rootX={1500} rootY={0} />
            )}

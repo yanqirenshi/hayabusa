@@ -3,6 +3,8 @@
 import snowflake from "snowflake-sdk";
 import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObject } from "../data/SnowflakeData";
 import { getMockSnowflakeData } from "../data/mockData";
+import { SnowflakeRole, SnowflakeRoleGraph } from "../data/SnowflakeRoleData";
+import { getMockRoleData } from "../data/mockRoleData";
 
 /**
  * Executes a snowflake query and returns the results
@@ -133,6 +135,76 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
     if (connection.isUp()) {
       connection.destroy((err, conn) => {
          if(err) console.error("Error closing Snowflake connection", err);
+      });
+    }
+  }
+}
+
+/**
+ * Fetches the role hierarchy from Snowflake.
+ * Falls back to mock data if credentials are not configured.
+ */
+export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
+  const org = process.env.SNOWFLAKE_ORGANIZATION;
+  const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
+  const username = process.env.SNOWFLAKE_USERNAME;
+  const password = process.env.SNOWFLAKE_PASSWORD;
+  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
+
+  if (!account || !username || !password) {
+    console.warn("⚠️ Snowflake credentials not configured. Using mock role data.");
+    return getMockRoleData();
+  }
+
+  const connection = snowflake.createConnection({ account, username, password });
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      connection.connect((err) => (err ? reject(err) : resolve()));
+    });
+
+    // 1. Fetch all roles
+    const rolesData = await executeQuery(connection, "SHOW ROLES");
+    const roleNames: string[] = rolesData.map((r: any) => (r.name || r.NAME) as string);
+
+    // 2. For each role, fetch what roles it's been granted TO (= its parent roles)
+    const roleMap = new Map<string, string[]>(); // roleName -> parentRoleNames
+    for (const roleName of roleNames) {
+      roleMap.set(roleName, []);
+    }
+
+    await Promise.all(
+      roleNames.map(async (roleName) => {
+        try {
+          const grants = await executeQuery(
+            connection,
+            `SHOW GRANTS OF ROLE "${roleName}"`
+          );
+          const parentRoles = grants
+            .filter((g: any) => {
+              const grantedTo = (g.granted_to || g.GRANTED_TO || "").toUpperCase();
+              return grantedTo === "ROLE";
+            })
+            .map((g: any) => (g.grantee_name || g.GRANTEE_NAME) as string);
+          roleMap.set(roleName, parentRoles);
+        } catch {
+          // Ignore permission errors
+        }
+      })
+    );
+
+    const roles = Array.from(roleMap.entries()).map(
+      ([name, parents]) => new SnowflakeRole(name, parents)
+    );
+
+    return new SnowflakeRoleGraph(roles);
+  } catch (error: any) {
+    console.error("Snowflake role fetch error:", error);
+    throw new Error(`Failed to fetch Snowflake roles: ${error.message}`);
+  } finally {
+    if (connection.isUp()) {
+      connection.destroy((err) => {
+        if (err) console.error("Error closing Snowflake connection", err);
       });
     }
   }

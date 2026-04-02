@@ -13,9 +13,15 @@ export interface IDrawingNode {
   children?: IDrawingNode[];
 }
 
+export interface IDrawingEdge {
+  id: string;
+  fromNodeId: string;
+  toNodeId: string;
+}
+
 export interface IDrawingClass {
   // Base interface for drawing structures that D3 will consume
   nodes: IDrawingNode[];
-  // links can be added later if relationships (like ER connections) are needed
+  edges?: IDrawingEdge[];
   links?: any[];
 }
