@@ -1,7 +1,6 @@
 import React from "react";
 import MainCanvasRenderer from "@/components/MainCanvasRenderer";
-import SnowflakeClientRenderer from "@/features/snowflake/components/SnowflakeClientRenderer";
-import SnowflakeRoleRenderer from "@/features/snowflake/components/SnowflakeRoleRenderer";
+import SnowflakeContainerRenderer from "@/features/snowflake/components/SnowflakeContainerRenderer";
 import TerraformClientRenderer from "@/features/terraform/components/TerraformClientRenderer";
 import { fetchSnowflakeData, fetchSnowflakeRoles } from "@/features/snowflake/services/snowflakeFetcher";
 import { fetchTerraformStructure } from "@/features/terraform/services/terraformScanner";
@@ -50,13 +49,13 @@ export default async function Home() {
           Currently hosts Snowflake and Terraform structures side-by-side.
         */}
         <MainCanvasRenderer width={3000} height={2000}>
-           {/* Snowflake DB objects: left (x=0) */}
-           <SnowflakeClientRenderer dbData={dbData} />
-
-           {/* Snowflake Role hierarchy: below DB objects (y=750) */}
-           {roleData && (
-             <SnowflakeRoleRenderer roleData={roleData} rootX={0} rootY={750} />
-           )}
+           {/* Snowflake: DB + Role diagram inside a single container box */}
+           <SnowflakeContainerRenderer
+             dbData={dbData}
+             roleData={roleData}
+             rootX={0}
+             rootY={0}
+           />
 
            {/* Terraform: right column (x=1500) */}
            {terraformData && (
