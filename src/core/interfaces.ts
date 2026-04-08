@@ -11,6 +11,7 @@ export interface IDrawingNode {
   label: string;
   type: string;
   children?: IDrawingNode[];
+  data?: any;
 }
 
 export interface IDrawingEdge {

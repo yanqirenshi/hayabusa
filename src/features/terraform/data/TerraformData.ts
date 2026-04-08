@@ -6,6 +6,7 @@ export interface TfItem {
   index: number;
   type?: string; 
   name: string;
+  content: string;
 }
 
 export class TerraformFile {

@@ -1,7 +1,7 @@
 import React from "react";
 import { IDrawingNode } from "@/core/interfaces";
 
-export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node: IDrawingNode; rootX: number; rootY: number, depth?: number }) {
+export default function TerraformGroup({ node, rootX, rootY, depth = 0, onNodeClick }: { node: IDrawingNode; rootX: number; rootY: number, depth?: number, onNodeClick?: (node: IDrawingNode) => void }) {
   // === Terraform Directory Node ===
   if (node.type === "terraform-dir") {
     return (
@@ -11,7 +11,7 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
           {node.label}/
         </text>
         {node.children && node.children.map((childNode, index) => (
-          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} />
+          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} onNodeClick={onNodeClick} />
         ))}
       </g>
     );
@@ -26,7 +26,7 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
           {node.label}
         </text>
         {node.children && node.children.map((childNode, index) => (
-          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} />
+          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} onNodeClick={onNodeClick} />
         ))}
       </g>
     );
@@ -43,7 +43,7 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
           {node.label}
         </text>
         {node.children && node.children.map((childNode, index) => (
-          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} />
+          <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} onNodeClick={onNodeClick} />
         ))}
       </g>
     );
@@ -61,7 +61,11 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0 }: { node
     const tagWidth = 45;
 
     return (
-      <g transform={`translate(${rootX}, ${rootY})`}>
+      <g 
+        transform={`translate(${rootX}, ${rootY})`} 
+        onClick={() => onNodeClick && onNodeClick(node)}
+        style={{ cursor: "pointer" }}
+      >
         {/* Outer box */}
         <rect width={node.width} height={node.height} fill="#ffffff" stroke="#94a3b8" strokeWidth={1} />
         

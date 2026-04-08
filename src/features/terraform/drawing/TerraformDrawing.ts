@@ -110,6 +110,7 @@ export class TerraformDrawing implements IDrawingClass {
           // Format: tag__type__name__typeWidth
           label: `${activeTag}__${item.type || ""}__${item.name}__${maxTypeWidth}`, 
           type: rendererType,
+          data: item,
         });
 
         currentY += CONFIG.itemHeight + CONFIG.itemGap;
