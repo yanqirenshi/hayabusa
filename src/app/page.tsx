@@ -4,6 +4,8 @@ import SnowflakeContainerRenderer from "@/features/snowflake/components/Snowflak
 import TerraformClientRenderer from "@/features/terraform/components/TerraformClientRenderer";
 import { fetchSnowflakeData, fetchSnowflakeRoles } from "@/features/snowflake/services/snowflakeFetcher";
 import { fetchTerraformStructure } from "@/features/terraform/services/terraformScanner";
+import { fetchAzureBlobData } from "@/features/azure-blob/services/azureBlobFetcher";
+import { fetchAdfData } from "@/features/azure-datafactory/services/adfFetcher";
 
 export default async function Home() {
   // 1. Fetch Snowflake metadata from Server safely (Credentials hidden on server)
@@ -32,6 +34,24 @@ export default async function Home() {
     roleData = JSON.parse(JSON.stringify(rawRoleData));
   } catch (error) {
     console.error("Snowflake role fetch error:", error);
+  }
+
+  // 5. Fetch Azure Blob Storage metadata
+  let azureBlobData = null;
+  try {
+    const rawAzureBlobData = await fetchAzureBlobData();
+    azureBlobData = JSON.parse(JSON.stringify(rawAzureBlobData));
+  } catch (error) {
+    console.error("Azure Blob fetch error:", error);
+  }
+
+  // 6. Fetch Azure Data Factory metadata
+  let adfData = null;
+  try {
+    const rawAdfData = await fetchAdfData();
+    adfData = JSON.parse(JSON.stringify(rawAdfData));
+  } catch (error) {
+    console.error("Azure Data Factory fetch error:", error);
   }
 
   return (
