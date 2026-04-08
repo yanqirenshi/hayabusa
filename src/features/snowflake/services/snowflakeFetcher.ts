@@ -7,6 +7,33 @@ import { SnowflakeRole, SnowflakeRoleGraph } from "../data/SnowflakeRoleData";
 import { getMockRoleData } from "../data/mockRoleData";
 
 /**
+ * Sorts schemas according to the SNOWFLAKE_SCHEMA_ORDER environment variable or alphabetically.
+ */
+function sortSchemas(schemas: SnowflakeSchema[]): SnowflakeSchema[] {
+  const orderEnv = process.env.SNOWFLAKE_SCHEMA_ORDER;
+  if (orderEnv) {
+    const orderList = orderEnv.split(',').map((s) => s.trim().toUpperCase());
+    return schemas.sort((a, b) => {
+      const idxA = orderList.indexOf(a.name.toUpperCase());
+      const idxB = orderList.indexOf(b.name.toUpperCase());
+
+      // If both are in the requested order list, sort by their position
+      if (idxA >= 0 && idxB >= 0) return idxA - idxB;
+      // If only a is in the list, it comes first
+      if (idxA >= 0) return -1;
+      // If only b is in the list, it comes first
+      if (idxB >= 0) return 1;
+      
+      // Fallback: alphabetical sort
+      return a.name.localeCompare(b.name);
+    });
+  } else {
+    // Default: alphabetical sort
+    return schemas.sort((a, b) => a.name.localeCompare(b.name));
+  }
+}
+
+/**
  * Executes a snowflake query and returns the results
  */
 function executeQuery(connection: snowflake.Connection, sqlText: string): Promise<any[]> {
@@ -41,7 +68,9 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
   if (!account || !username || !password || !targetDatabase) {
     console.warn("⚠️ Snowflake credentials not fully configured in .env.local. Falling back to mock data.");
-    return getMockSnowflakeData();
+    const mockDbData = getMockSnowflakeData();
+    mockDbData.schemas = sortSchemas(mockDbData.schemas);
+    return mockDbData;
   }
 
   // Define Snowflake connection
@@ -126,7 +155,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
       schemas.push(new SnowflakeSchema(schemaName, objectGroups));
     }
 
-    return new SnowflakeDatabase(targetDatabase, schemas);
+    return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas));
   } catch (error: any) {
     console.error("Snowflake fetch error:", error);
     throw new Error(`Failed to fetch Snowflake data: ${error.message || JSON.stringify(error)}`);
