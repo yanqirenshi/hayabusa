@@ -3,7 +3,10 @@ import { IDataClass } from "@/core/interfaces";
 export class SnowflakeObject {
   constructor(
     public name: string,
-    public type: "Table" | "View" | "Stage" | "FileFormat" | string
+    public type: "Table" | "View" | "Stage" | "FileFormat" | string,
+    public properties?: any,
+    public databaseName?: string,
+    public schemaName?: string
   ) {}
 }
 

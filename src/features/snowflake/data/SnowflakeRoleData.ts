@@ -18,7 +18,8 @@ export class SnowflakeRole {
   public tier: RoleTier;
   constructor(
     public name: string,
-    public parentRoles: string[] = []
+    public parentRoles: string[] = [],
+    public properties?: any
   ) {
     this.tier = detectRoleTier(name);
   }
@@ -33,6 +34,7 @@ export interface RolePOJO {
   name: string;
   tier: RoleTier;
   parentRoles: string[];
+  properties?: any;
 }
 
 export interface RoleGraphPOJO {

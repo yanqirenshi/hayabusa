@@ -2,7 +2,7 @@ import React from "react";
 import { IDrawingNode } from "@/core/interfaces";
 
 // Recursive renderer for Snowflake nodes
-const renderNode = (node: IDrawingNode) => {
+const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode) => void) => {
   let textX = 10;
   let textY = 20;
   let fontSize = "12px";
@@ -25,8 +25,20 @@ const renderNode = (node: IDrawingNode) => {
     textAnchor = "start";
   }
 
+  const isClickable = node.type === "item";
+
   return (
-    <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
+    <g 
+      key={node.id} 
+      transform={`translate(${node.x}, ${node.y})`}
+      onClick={(e) => {
+        if (isClickable && onNodeClick) {
+          e.stopPropagation();
+          onNodeClick(node);
+        }
+      }}
+      style={{ cursor: isClickable ? "pointer" : "default" }}
+    >
       <rect
         width={node.width}
         height={node.height}
@@ -42,6 +54,13 @@ const renderNode = (node: IDrawingNode) => {
         fontSize={fontSize}
         fill="#333"
         textAnchor={textAnchor}
+        onClick={(e) => {
+          if (onNodeClick) {
+            e.stopPropagation();
+            onNodeClick(node);
+          }
+        }}
+        style={{ cursor: "pointer", userSelect: "none" }}
       >
         {node.label}
       </text>
@@ -54,7 +73,7 @@ const renderNode = (node: IDrawingNode) => {
         </>
       )}
 
-      {node.children && node.children.map((child) => renderNode(child))}
+      {node.children && node.children.map((child) => renderNode(child, onNodeClick))}
     </g>
   );
 };
@@ -63,17 +82,18 @@ interface SnowflakeGroupProps {
   nodes: IDrawingNode[];
   x?: number;
   y?: number;
+  onNodeClick?: (node: IDrawingNode) => void;
 }
 
 /**
  * SnowflakeGroup
  * Receives the top level drawing nodes (database root) and recursively renders them
  */
-export default function SnowflakeGroup({ nodes, x = 0, y = 0 }: SnowflakeGroupProps) {
+export default function SnowflakeGroup({ nodes, x = 0, y = 0, onNodeClick }: SnowflakeGroupProps) {
   if (nodes.length === 0) return null;
   return (
     <g transform={`translate(${x}, ${y})`}>
-      {nodes.map((node) => renderNode(node))}
+      {nodes.map((node) => renderNode(node, onNodeClick))}
     </g>
   );
 }

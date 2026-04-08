@@ -69,7 +69,8 @@ export class SnowflakeDrawing implements IDrawingClass {
             width: maxItemWidthForGroup,
             height: CONFIG.itemHeight,
             label: obj.name,
-            type: "item"
+            type: "item",
+            data: obj
           };
           itemNodes.push(itemNode);
           currentItemY += CONFIG.itemHeight + CONFIG.itemGap;

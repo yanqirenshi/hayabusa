@@ -11,6 +11,25 @@ export default function TerraformClientRenderer({ dirData, rootX = 0, rootY = 0 
   const [nodes, setNodes] = useState<IDrawingNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<IDrawingNode | null>(null);
 
+  // Inspector mutual exclusion
+  useEffect(() => {
+    const handleInspectorEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== 'terraform') {
+        setSelectedNode(null);
+      }
+    };
+    window.addEventListener('inspectorOpened', handleInspectorEvent);
+    return () => window.removeEventListener('inspectorOpened', handleInspectorEvent);
+  }, []);
+
+  const handleNodeSelect = (node: IDrawingNode | null) => {
+    setSelectedNode(node);
+    if (node) {
+      window.dispatchEvent(new CustomEvent('inspectorOpened', { detail: 'terraform' }));
+    }
+  };
+
   useEffect(() => {
     // Exact text measurement algorithm via Canvas 2D API
     const canvas = document.createElement("canvas");
@@ -69,7 +88,7 @@ export default function TerraformClientRenderer({ dirData, rootX = 0, rootY = 0 
             <h2 style={{ fontSize: "16px", fontWeight: "bold", margin: "4px 0 0 0", color: "#0f172a" }}>{headerTitle}</h2>
           </div>
           <button 
-            onClick={() => setSelectedNode(null)} 
+            onClick={() => handleNodeSelect(null)} 
             style={{ border: "none", background: "none", fontSize: "20px", cursor: "pointer", color: "#64748b", padding: "4px" }}
           >
             ✕
@@ -91,7 +110,7 @@ export default function TerraformClientRenderer({ dirData, rootX = 0, rootY = 0 
     <>
       <g transform={`translate(${rootX}, ${rootY})`}>
         {nodes.map((node, index) => (
-          <TerraformGroup key={node.id} node={node} rootX={node.x} rootY={node.y} depth={0} onNodeClick={setSelectedNode} />
+          <TerraformGroup key={node.id} node={node} rootX={node.x} rootY={node.y} depth={0} onNodeClick={handleNodeSelect} />
         ))}
       </g>
       {renderInspector()}

@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { SnowflakeDatabase } from "../data/SnowflakeData";
+import { fetchSnowflakeDDL } from "../services/snowflakeFetcher";
 import { RoleGraphPOJO, RoleTier } from "../data/SnowflakeRoleData";
 import { SnowflakeDrawing } from "../drawing/SnowflakeDrawing";
 import { SnowflakeRoleDrawing } from "../drawing/SnowflakeRoleDrawing";
@@ -22,11 +24,11 @@ const TIER_STYLES: Record<string, { nodeBg: string; nodeBorder: string; nodeText
 
 // ---- Sub-components (role diagram) ----
 
-function RoleNode({ node }: { node: IDrawingNode }) {
+function RoleNode({ node, onNodeClick }: { node: IDrawingNode, onNodeClick: (node: IDrawingNode) => void }) {
   const bandType = node.type.replace("role-node-", "role-band-");
   const style = TIER_STYLES[bandType] ?? TIER_STYLES["role-band-custom"];
   return (
-    <g>
+    <g onClick={() => onNodeClick(node)} style={{ cursor: "pointer" }}>
       <rect x={node.x} y={node.y} width={node.width} height={node.height}
         rx={6} ry={6} fill={style.nodeBg} stroke={style.nodeBorder} strokeWidth={1.5} />
       <text x={node.x + node.width / 2} y={node.y + node.height / 2}
@@ -96,6 +98,63 @@ export default function SnowflakeContainerRenderer({
   rootY?:    number;
 }) {
   const [layout, setLayout] = useState<LayoutState | null>(null);
+  const [selectedNode, setSelectedNode] = useState<IDrawingNode | null>(null);
+  const [asyncDdl, setAsyncDdl] = useState<string | null>(null);
+  const [isLoadingDdl, setIsLoadingDdl] = useState(false);
+  const [ddlError, setDdlError] = useState<string | null>(null);
+
+  // Inspector mutual exclusion
+  useEffect(() => {
+    const handleInspectorEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== 'snowflake') {
+        setSelectedNode(null);
+      }
+    };
+    window.addEventListener('inspectorOpened', handleInspectorEvent);
+    return () => window.removeEventListener('inspectorOpened', handleInspectorEvent);
+  }, []);
+
+  const handleNodeSelect = (node: IDrawingNode | null) => {
+    setSelectedNode(node);
+    if (node) {
+      window.dispatchEvent(new CustomEvent('inspectorOpened', { detail: 'snowflake' }));
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedNode) {
+      setAsyncDdl(null);
+      setDdlError(null);
+      return;
+    }
+
+    const objData = selectedNode.data;
+    if (!objData) return;
+
+    const { name, type, databaseName, schemaName } = objData;
+    const fetchableTypes = ['Table', 'View', 'Materialized View', 'Stage', 'FileFormat', 'Pipe', 'Stream', 'Task', 'Sequence', 'Procedure', 'Function'];
+
+    // Only fetch if required identities are present
+    if (databaseName && schemaName && fetchableTypes.includes(type)) {
+      setIsLoadingDdl(true);
+      setDdlError(null);
+      
+      fetchSnowflakeDDL(type, databaseName, schemaName, name)
+        .then((ddlStr) => {
+           setAsyncDdl(ddlStr);
+        })
+        .catch((err) => {
+           setDdlError(err.message || "Failed to fetch DDL");
+        })
+        .finally(() => {
+           setIsLoadingDdl(false);
+        });
+    } else {
+      setAsyncDdl(null);
+      setDdlError(null);
+    }
+  }, [selectedNode]);
 
   useEffect(() => {
     // ---- DB diagram (13px Arial) ----
@@ -156,33 +215,125 @@ export default function SnowflakeContainerRenderer({
   }
   const visibleRoleNodes = roleNodes.filter(n => n.type.startsWith("role-node-"));
 
+  // ---- Inspector rendering ----
+  const renderInspector = () => {
+    if (!selectedNode || typeof document === 'undefined') return null;
+    
+    const objData = selectedNode.data;
+    const headerTitle = objData?.name || selectedNode.label || "Inspector";
+    const isRole = selectedNode.type && selectedNode.type.startsWith("role-node-");
+    
+    let blockType = "Object";
+    if (isRole) blockType = "ROLE";
+    else if (objData?.type) blockType = objData.type;
+    else if (selectedNode.type) blockType = selectedNode.type.toUpperCase();
+    
+    let contentString = "";
+    if (objData && objData.properties) {
+      // Create a clean readable representation of the properties
+      const props = { ...objData.properties };
+      // Sometimes 'text' or 'TEXT' might hold the raw SQL query depending on the Snowflake object type
+      const mainSqlText = props['text'] || props['TEXT'];
+      
+      // Remove it from props so we don't display it twice if we want it top level
+      if (mainSqlText) {
+        delete props['text'];
+        delete props['TEXT'];
+      }
+      
+      let lines = [];
+      if (isLoadingDdl) {
+        lines.push(`/* Source Code (DDL) */\nLoading DDL from Snowflake...\n`);
+      } else if (ddlError) {
+        lines.push(`/* Source Code (DDL) */\n-- Error: ${ddlError}\n`);
+      } else if (asyncDdl) {
+        lines.push(`/* Source Code (DDL) */\n${asyncDdl}\n`);
+      } else if (mainSqlText) {
+        lines.push(`/* Source Code */\n${mainSqlText}\n`);
+      }
+      
+      lines.push(`/* Metadata */\n${JSON.stringify({ ...props, type: blockType, name: headerTitle }, null, 2)}`);
+      contentString = lines.join('\n');
+    } else {
+      contentString = JSON.stringify({ type: blockType, name: headerTitle }, null, 2);
+    }
+
+    return createPortal(
+      <div style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        width: "500px",
+        height: "100vh",
+        backgroundColor: "#ffffff",
+        borderLeft: "1px solid #e2e8f0",
+        boxShadow: "-4px 0 25px rgba(0,0,0,0.1)",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "sans-serif"
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: "#f0f9ff" // Light blue subtle accent for Snowflake
+        }}>
+          <div>
+            <span style={{ fontSize: "11px", fontWeight: "bold", color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px" }}>{blockType}</span>
+            <h2 style={{ fontSize: "16px", fontWeight: "bold", margin: "4px 0 0 0", color: "#0f172a" }}>{headerTitle}</h2>
+          </div>
+          <button 
+            onClick={() => handleNodeSelect(null)} 
+            style={{ border: "none", background: "none", fontSize: "20px", cursor: "pointer", color: "#64748b", padding: "4px" }}
+          >
+            ✕
+          </button>
+        </div>
+        
+        {/* Content Area */}
+        <div style={{ padding: "20px", overflowY: "auto", flex: 1, backgroundColor: "#0f172a" }}>
+          <pre style={{ margin: 0, fontSize: "13px", fontFamily: "Consolas, Monaco, 'Courier New', monospace", color: "#e2e8f0", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+            {contentString}
+          </pre>
+        </div>
+      </div>,
+      document.body
+    );
+  };
+
   return (
-    <g transform={`translate(${rootX}, ${rootY})`}>
+    <>
+      <g transform={`translate(${rootX}, ${rootY})`}>
+        {/* Outer container box */}
+        <rect
+          x={0} y={0}
+          width={containerW} height={containerH}
+          fill="white"
+          stroke="#d1d5db"
+          strokeWidth={1.5}
+          rx={8} ry={8}
+        />
 
-      {/* ── Outer container box ── */}
-      <rect
-        x={0} y={0}
-        width={containerW} height={containerH}
-        fill="white"
-        stroke="#d1d5db"
-        strokeWidth={1.5}
-        rx={8} ry={8}
-      />
+        {/* DB diagram */}
+        <SnowflakeGroup nodes={dbNodes} x={PADDING} y={PADDING} onNodeClick={handleNodeSelect} />
 
-      {/* ── DB diagram ── */}
-      <SnowflakeGroup nodes={dbNodes} x={PADDING} y={PADDING} />
-
-      {/* ── Role hierarchy diagram ── */}
-      {hasRole && (
-        <g transform={`translate(${PADDING}, ${roleOffsetY})`}>
-          {/* Edges (behind nodes) */}
-          {Array.from(edgeGroups.entries()).map(([fromId, edges]) => (
-            <EdgeGroup key={fromId} fromId={fromId} edges={edges} nodeMap={nodeMap} />
-          ))}
-          {/* Role nodes */}
-          {visibleRoleNodes.map(n => <RoleNode key={n.id} node={n} />)}
-        </g>
-      )}
-    </g>
+        {/* Role hierarchy diagram */}
+        {hasRole && (
+          <g transform={`translate(${PADDING}, ${roleOffsetY})`}>
+            {/* Edges (behind nodes) */}
+            {Array.from(edgeGroups.entries()).map(([fromId, edges]) => (
+              <EdgeGroup key={fromId} fromId={fromId} edges={edges} nodeMap={nodeMap} />
+            ))}
+            {/* Role nodes */}
+            {visibleRoleNodes.map(n => <RoleNode key={n.id} node={n} onNodeClick={handleNodeSelect} />)}
+          </g>
+        )}
+      </g>
+      {renderInspector()}
+    </>
   );
 }

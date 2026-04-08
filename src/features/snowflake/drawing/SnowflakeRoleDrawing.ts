@@ -208,6 +208,7 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
           height: CONFIG.nodeHeight,
           label: fr.name,
           type: "role-node-functional",
+          data: fr,
         });
 
         const arKids = (childrenOf.get(fr.name) ?? []).filter(r => r.tier === "access");
@@ -225,6 +226,7 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
               height: CONFIG.nodeHeight,
               label: ar.name,
               type: "role-node-access",
+              data: ar,
             });
             arX += this.nodeWidth(ar.name) + CONFIG.nodeHGap;
             this.edges.push({ id: `edge-${fr.name}__${ar.name}__${fi}`, fromNodeId: frId, toNodeId: arId });
@@ -278,6 +280,7 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
           height: CONFIG.nodeHeight,
           label: sr.name,
           type: "role-node-system",
+          data: sr,
         });
 
         // Edges to all children  (system→system and system→functional)

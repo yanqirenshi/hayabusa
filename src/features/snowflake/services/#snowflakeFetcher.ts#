@@ -1,3 +1,4 @@
+
 "use server";
 
 import snowflake from "snowflake-sdk";
@@ -145,7 +146,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
             objectGroups.push(
               new SnowflakeObjectGroup(
                 targetObjectTypes[index].label,
-                filteredData.map((item: any) => new SnowflakeObject(item.name || item.NAME, targetObjectTypes[index].label, item, targetDatabase, schemaName))
+                filteredData.map((item: any) => new SnowflakeObject(item.name || item.NAME, targetObjectTypes[index].label, item))
               )
             );
           }
@@ -194,12 +195,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
 
     // 1. Fetch all roles
     const rolesData = await executeQuery(connection, "SHOW ROLES");
-    const rolePropsMap = new Map<string, any>();
-    const roleNames: string[] = rolesData.map((r: any) => {
-      const name = (r.name || r.NAME) as string;
-      rolePropsMap.set(name, r);
-      return name;
-    });
+    const roleNames: string[] = rolesData.map((r: any) => (r.name || r.NAME) as string);
 
     // 2. For each role, fetch what roles it's been granted TO (= its parent roles)
     const roleMap = new Map<string, string[]>(); // roleName -> parentRoleNames
@@ -228,64 +224,13 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
     );
 
     const roles = Array.from(roleMap.entries()).map(
-      ([name, parents]) => new SnowflakeRole(name, parents, rolePropsMap.get(name))
+      ([name, parents]) => new SnowflakeRole(name, parents)
     );
 
     return new SnowflakeRoleGraph(roles);
   } catch (error: any) {
     console.error("Snowflake role fetch error:", error);
     throw new Error(`Failed to fetch Snowflake roles: ${error.message}`);
-  } finally {
-    if (connection.isUp()) {
-      connection.destroy((err) => {
-        if (err) console.error("Error closing Snowflake connection", err);
-      });
-    }
-  }
-}
-
-/**
- * Fetches the DDL (CREATE statement) for a specific Snowflake object
- */
-export async function fetchSnowflakeDDL(objectType: string, databaseName: string, schemaName: string, objectName: string): Promise<string> {
-  const org = process.env.SNOWFLAKE_ORGANIZATION;
-  const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
-  const username = process.env.SNOWFLAKE_USERNAME;
-  const password = process.env.SNOWFLAKE_PASSWORD;
-  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
-
-  if (!account || !username || !password) {
-    throw new Error("Snowflake credentials not configured.");
-  }
-
-  const connection = snowflake.createConnection({
-    account,
-    username,
-    password,
-    role: process.env.SNOWFLAKE_ROLE,
-    warehouse: process.env.SNOWFLAKE_WAREHOUSE,
-    database: databaseName,
-  });
-
-  try {
-    await new Promise<void>((resolve, reject) => {
-      connection.connect((err) => (err ? reject(err) : resolve()));
-    });
-
-    let ddlType = objectType.toUpperCase();
-    if (ddlType === "MATERIALIZED VIEW") ddlType = "VIEW";
-
-    const fullPath = `"${databaseName}"."${schemaName}"."${objectName}"`;
-    const sqlText = `SELECT GET_DDL('${ddlType}', '${fullPath}') AS DDL`;
-
-    const results = await executeQuery(connection, sqlText);
-    if (results && results.length > 0) {
-      return results[0].DDL || results[0].ddl || "";
-    }
-    return "";
-  } catch (error: any) {
-    console.error(`Snowflake GET_DDL fetch error for ${objectName}:`, error);
-    throw new Error(`Failed to fetch DDL: ${error.message}`);
   } finally {
     if (connection.isUp()) {
       connection.destroy((err) => {
