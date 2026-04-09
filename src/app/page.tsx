@@ -2,6 +2,7 @@ import React from "react";
 import MainCanvasRenderer from "@/components/MainCanvasRenderer";
 import SnowflakeContainerRenderer from "@/features/snowflake/components/SnowflakeContainerRenderer";
 import TerraformClientRenderer from "@/features/terraform/components/TerraformClientRenderer";
+import AzureBlobClientRenderer from "@/features/azure-blob/components/AzureBlobClientRenderer";
 import { fetchSnowflakeData, fetchSnowflakeRoles } from "@/features/snowflake/services/snowflakeFetcher";
 import { fetchTerraformStructure } from "@/features/terraform/services/terraformScanner";
 import { fetchAzureBlobData } from "@/features/azure-blob/services/azureBlobFetcher";
@@ -68,7 +69,7 @@ export default async function Home() {
           Global Canvas.
           Currently hosts Snowflake and Terraform structures side-by-side.
         */}
-        <MainCanvasRenderer width={3000} height={2000}>
+        <MainCanvasRenderer width={5000} height={2000}>
            {/* Snowflake: DB + Role diagram inside a single container box */}
            <SnowflakeContainerRenderer
              dbData={dbData}
@@ -80,6 +81,11 @@ export default async function Home() {
            {/* Terraform: right column (x=1500) */}
            {terraformData && (
              <TerraformClientRenderer dirData={terraformData} rootX={1500} rootY={0} />
+           )}
+
+           {/* Azure Blob: further right column (x=3000) */}
+           {azureBlobData && (
+             <AzureBlobClientRenderer dbData={azureBlobData} rootX={3000} rootY={0} />
            )}
         </MainCanvasRenderer>
       </main>

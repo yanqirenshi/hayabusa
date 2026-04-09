@@ -1,15 +1,15 @@
 "use server";
 
 import { BlobServiceClient } from "@azure/storage-blob";
-import { AzureBlob, AzureBlobContainer, AzureBlobStorage } from "../data/AzureBlobData";
+import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup } from "../data/AzureBlobData";
 import { getMockAzureBlobData } from "../data/mockData";
 
-export async function fetchAzureBlobData(): Promise<AzureBlobStorage> {
+export async function fetchAzureBlobData(): Promise<AzureManagementGroup> {
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
-  if (!connectionString) {
+  if (!connectionString || connectionString === "your_connection_string") {
     console.warn(
-      "[AzureBlob] AZURE_STORAGE_CONNECTION_STRING is not set. Using mock data.",
+      "[AzureBlob] AZURE_STORAGE_CONNECTION_STRING is not set or invalid. Using mock data.",
     );
     return getMockAzureBlobData();
   }
@@ -30,22 +30,27 @@ export async function fetchAzureBlobData(): Promise<AzureBlobStorage> {
       );
 
       const blobs: AzureBlob[] = [];
+      const directories: AzureBlobDirectory[] = [];
 
-      // List all blobs in the container
-      for await (const blobItem of containerClient.listBlobsFlat({
-        includeMetadata: true,
-      })) {
-        blobs.push(
-          new AzureBlob(
-            blobItem.name,
-            blobItem.properties.contentLength ?? 0,
-            blobItem.properties.contentType ?? "application/octet-stream",
-            blobItem.properties.lastModified?.toISOString() ?? "",
-          ),
-        );
+      // List blobs and directories at the root of the container
+      for await (const item of containerClient.listBlobsByHierarchy("/")) {
+        if (item.kind === "prefix") {
+          // It's a virtual directory
+          const dirName = item.name.replace(/\/$/, "");
+          directories.push(new AzureBlobDirectory(dirName));
+        } else if (item.kind === "blob") {
+          blobs.push(
+            new AzureBlob(
+              item.name,
+              item.properties.contentLength ?? 0,
+              item.properties.contentType ?? "application/octet-stream",
+              item.properties.lastModified?.toISOString() ?? "",
+            ),
+          );
+        }
       }
 
-      containers.push(new AzureBlobContainer(containerItem.name, blobs));
+      containers.push(new AzureBlobContainer(containerItem.name, directories, blobs));
     }
   } catch (error) {
     console.error("[AzureBlob] Failed to fetch blob data:", error);
@@ -53,5 +58,12 @@ export async function fetchAzureBlobData(): Promise<AzureBlobStorage> {
     return getMockAzureBlobData();
   }
 
-  return new AzureBlobStorage(accountName, containers);
+  const storageAccount = new AzureBlobStorage(accountName, containers);
+  
+  // Dummy wrappers
+  const resourceGroup = new AzureResourceGroup("rg-default", [storageAccount]);
+  const subscription = new AzureSubscription("sub-default", [resourceGroup]);
+  const managementGroup = new AzureManagementGroup("Tenant Root Group", [subscription]);
+
+  return managementGroup;
 }
