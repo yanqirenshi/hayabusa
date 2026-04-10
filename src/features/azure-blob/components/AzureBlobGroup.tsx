@@ -8,7 +8,16 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
   let textAnchor: "start" | "middle" | "end" = "start";
   
   // Custom headers based on type
-  if (node.type === "azure-management-group") {
+  if (node.type === "azure-tenant") {
+    textX = 45;
+    textY = 32;
+    fontSize = "20px";
+  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container") {
+    textX = node.width / 2;
+    textY = 20;
+    fontSize = "14px";
+    textAnchor = "middle";
+  } else if (node.type === "azure-management-group") {
     textX = 45;
     textY = 30;
     fontSize = "18px";
@@ -30,8 +39,8 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     textY = 20;
     fontSize = "14px";
     textAnchor = "middle";
-  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item") {
-    textX = 25; // Shift right for the icon
+  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item" || node.type === "azure-entra-user" || node.type === "azure-entra-group" || node.type === "azure-entra-app") {
+    textX = 30; // Shift right for the icon
     textY = 22;
     fontSize = "13px";
     textAnchor = "start";
@@ -40,6 +49,10 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
   // Icon handling for folder/file
   const isDir = node.type === "azure-blob-directory";
   const isBlob = node.type === "azure-blob-item";
+  const isUser = node.type === "azure-entra-user";
+  const isGroup = node.type === "azure-entra-group";
+  const isApp = node.type === "azure-entra-app";
+  const isItemLike = isDir || isBlob || isUser || isGroup || isApp;
 
   // Box styles based on type
   let fill = "transparent";
@@ -48,7 +61,18 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
   let rx = 0;
   let dasharray = "none";
 
-  if (node.type === "azure-management-group") {
+  if (node.type === "azure-tenant") {
+    fill = "#ffffff";
+    stroke = "#0078D4"; // Azure Blue
+    strokeWidth = 3;
+    rx = 12;
+  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container") {
+    fill = "#f8fafc";
+    stroke = "#cbd5e1";
+    strokeWidth = 1.5;
+    dasharray = "4,4";
+    rx = 4;
+  } else if (node.type === "azure-management-group") {
     fill = "#f8fafc";
     stroke = "#94a3b8"; // Slate 400
     strokeWidth = 2;
@@ -72,12 +96,13 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
   } else if (node.type === "azure-blob-container") {
     fill = "#ffffff";
     stroke = "#e2e8f0"; // Slate 200
-  } else if (isDir || isBlob) {
+  } else if (isItemLike) {
     rx = 4;
     stroke = "#cccccc";
+    fill = "#ffffff";
   }
 
-  const isClickableBox = node.type !== "azure-blob-container" && node.type !== "azure-blob-account";
+  const isClickableBox = node.type !== "azure-blob-container" && node.type !== "azure-blob-account" && node.type !== "azure-entra-users-container" && node.type !== "azure-entra-groups-container" && node.type !== "azure-entra-apps-container";
 
   return (
     <g 
@@ -104,9 +129,13 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
       {/* Type Specific Icons */}
       {isDir && <text x={8} y={22} fontSize="14px" fill="#FBBF24" style={{ pointerEvents: "none" }}>📁</text>}
       {isBlob && <text x={8} y={22} fontSize="14px" fill="#9CA3AF" style={{ pointerEvents: "none" }}>📄</text>}
+      {isUser && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>👤</text>}
+      {isGroup && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>👥</text>}
+      {isApp && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>📦</text>}
+      {node.type === "azure-tenant" && <text x={15} y={32} fontSize="20px" fill="#0078D4" style={{ pointerEvents: "none" }}>🆔</text>}
       {node.type === "azure-management-group" && <text x={15} y={30} fontSize="18px" fill="#475569" style={{ pointerEvents: "none" }}>🏢</text>}
       {node.type === "azure-subscription" && <text x={15} y={30} fontSize="18px" fill="#D97706" style={{ pointerEvents: "none" }}>🔑</text>}
-      {node.type === "azure-resource-group" && <text x={15} y={30} fontSize="18px" fill="#2563EB" style={{ pointerEvents: "none" }}>📦</text>}
+      {node.type === "azure-resource-group" && <text x={15} y={30} fontSize="18px" fill="#2563EB" style={{ pointerEvents: "none" }}>🚧</text>}
 
       <text
         x={textX}
@@ -114,7 +143,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
         fontFamily="Inter, Arial, sans-serif"
         fontSize={fontSize}
         fill="#333"
-        fontWeight={node.type.startsWith("azure-blob-") && !isDir && !isBlob ? "normal" : "bold"}
+        fontWeight={node.type.startsWith("azure-blob-") && !isItemLike ? "normal" : "bold"}
         textAnchor={textAnchor}
         onClick={(e) => {
           if (onNodeClick) {

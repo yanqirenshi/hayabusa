@@ -46,9 +46,40 @@ export class AzureSubscription {
   ) {}
 }
 
-export class AzureManagementGroup implements IDataClass {
+export class AzureEntraUser {
+  constructor(
+    public displayName: string,
+    public userPrincipalName: string,
+  ) {}
+}
+
+export class AzureEntraGroup {
+  constructor(
+    public displayName: string,
+    public id: string,
+  ) {}
+}
+
+export class AzureEntraApp {
+  constructor(
+    public displayName: string,
+    public appId: string,
+  ) {}
+}
+
+export class AzureManagementGroup {
   constructor(
     public name: string,
     public subscriptions: AzureSubscription[] = [],
+  ) {}
+}
+
+export class AzureTenant implements IDataClass {
+  constructor(
+    public name: string,
+    public managementGroups: AzureManagementGroup[] = [],
+    public users: AzureEntraUser[] = [],
+    public groups: AzureEntraGroup[] = [],
+    public apps: AzureEntraApp[] = [],
   ) {}
 }

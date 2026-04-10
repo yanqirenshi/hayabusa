@@ -1,7 +1,8 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
-import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer } from "../data/AzureBlobData";
+import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant } from "../data/AzureBlobData";
 
 const CONFIG = {
+  tenantPadding: { top: 65, right: 50, bottom: 50, left: 50 },
   mgPadding: { top: 60, right: 40, bottom: 40, left: 40 },
   subPadding: { top: 60, right: 40, bottom: 40, left: 40 },
   rgPadding: { top: 60, right: 40, bottom: 40, left: 40 },
@@ -18,18 +19,180 @@ export class AzureBlobDrawing implements IDrawingClass {
   public width: number = 0;
   public height: number = 0;
 
-  constructor(data: AzureManagementGroup, private measureTextWidth?: (text: string) => number) {
+  constructor(data: AzureTenant, private measureTextWidth?: (text: string) => number) {
     this.computeLayout(data);
   }
 
-  private computeLayout(mg: AzureManagementGroup) {
+  private computeLayout(tenant: AzureTenant) {
     this.nodes = [];
     
-    const mgNode = this.layoutManagementGroup(mg, 0, 0);
-    this.width = mgNode.width;
-    this.height = mgNode.height;
+    const tenantNode = this.layoutTenant(tenant, 0, 0);
+    this.width = tenantNode.width;
+    this.height = tenantNode.height;
     
-    this.nodes = [mgNode];
+    this.nodes = [tenantNode];
+  }
+
+  private layoutTenant(tenant: AzureTenant, startX: number, startY: number): IDrawingNode {
+    const childNodes: IDrawingNode[] = [];
+    let currentX = CONFIG.tenantPadding.left;
+    let maxOverallHeight = CONFIG.tenantPadding.top;
+
+    // 1. Users Column
+    if (tenant.users && tenant.users.length > 0) {
+      let relativeY = 40;
+      let maxWidth = 280;
+      const userColNodes: IDrawingNode[] = [];
+
+      for (const u of tenant.users) {
+        userColNodes.push({
+          id: `azure-user-${u.userPrincipalName}`,
+          x: 15,
+          y: relativeY,
+          width: maxWidth - 30,
+          height: CONFIG.itemHeight,
+          label: u.displayName,
+          type: "azure-entra-user",
+          data: u
+        });
+        relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+      }
+
+      const colHeight = Math.max(200, relativeY + 20);
+      if (CONFIG.tenantPadding.top + colHeight > maxOverallHeight) {
+        maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
+      }
+
+      childNodes.push({
+        id: `azure-users-col`,
+        x: currentX,
+        y: CONFIG.tenantPadding.top,
+        width: maxWidth,
+        height: colHeight,
+        label: "Users",
+        type: "azure-entra-users-container",
+        children: userColNodes,
+        data: null
+      });
+
+      currentX += maxWidth + CONFIG.gap;
+    }
+
+    // 2. Groups Column
+    if (tenant.groups && tenant.groups.length > 0) {
+      let relativeY = 40;
+      let maxWidth = 280;
+      const groupColNodes: IDrawingNode[] = [];
+
+      for (const g of tenant.groups) {
+        groupColNodes.push({
+          id: `azure-group-${g.id}`,
+          x: 15,
+          y: relativeY,
+          width: maxWidth - 30,
+          height: CONFIG.itemHeight,
+          label: g.displayName,
+          type: "azure-entra-group",
+          data: g
+        });
+        relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+      }
+
+      const colHeight = Math.max(200, relativeY + 20);
+      if (CONFIG.tenantPadding.top + colHeight > maxOverallHeight) {
+        maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
+      }
+
+      childNodes.push({
+        id: `azure-groups-col`,
+        x: currentX,
+        y: CONFIG.tenantPadding.top,
+        width: maxWidth,
+        height: colHeight,
+        label: "Groups",
+        type: "azure-entra-groups-container",
+        children: groupColNodes,
+        data: null
+      });
+
+      currentX += maxWidth + CONFIG.gap;
+    }
+
+    // 3. Apps Column
+    if (tenant.apps && tenant.apps.length > 0) {
+      let relativeY = 40;
+      let maxWidth = 280;
+      const appColNodes: IDrawingNode[] = [];
+
+      for (const a of tenant.apps) {
+        appColNodes.push({
+          id: `azure-app-${a.appId}`,
+          x: 15,
+          y: relativeY,
+          width: maxWidth - 30,
+          height: CONFIG.itemHeight,
+          label: a.displayName,
+          type: "azure-entra-app",
+          data: a
+        });
+        relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+      }
+
+      const colHeight = Math.max(200, relativeY + 20);
+      if (CONFIG.tenantPadding.top + colHeight > maxOverallHeight) {
+        maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
+      }
+
+      childNodes.push({
+        id: `azure-apps-col`,
+        x: currentX,
+        y: CONFIG.tenantPadding.top,
+        width: maxWidth,
+        height: colHeight,
+        label: "Apps",
+        type: "azure-entra-apps-container",
+        children: appColNodes,
+        data: null
+      });
+
+      currentX += maxWidth + CONFIG.gap;
+    }
+
+    // 4. Management Groups Column
+    if (tenant.managementGroups && tenant.managementGroups.length > 0) {
+      let mgY = CONFIG.tenantPadding.top;
+      let maxMgWidth = 0;
+
+      for (const mg of tenant.managementGroups) {
+        const mgNode = this.layoutManagementGroup(mg, currentX, mgY);
+        childNodes.push(mgNode);
+        mgY += mgNode.height + CONFIG.gap;
+        if (mgNode.width > maxMgWidth) maxMgWidth = mgNode.width;
+      }
+
+      if (mgY > maxOverallHeight) {
+        maxOverallHeight = mgY;
+      }
+      currentX += maxMgWidth;
+    } else {
+      // In case there are no MGs, remove the extra gap
+      currentX -= CONFIG.gap;
+    }
+
+    const tenantWidth = Math.max(500, currentX + CONFIG.tenantPadding.right);
+    const tenantHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
+
+    return {
+      id: `azure-tenant-${tenant.name}`,
+      x: startX,
+      y: startY,
+      width: tenantWidth,
+      height: tenantHeight,
+      label: tenant.name,
+      type: "azure-tenant",
+      children: childNodes,
+      data: tenant
+    };
   }
 
   private layoutManagementGroup(mg: AzureManagementGroup, startX: number, startY: number): IDrawingNode {

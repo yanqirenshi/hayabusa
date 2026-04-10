@@ -1,10 +1,11 @@
 "use server";
 
 import { BlobServiceClient } from "@azure/storage-blob";
-import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup } from "../data/AzureBlobData";
+import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureTenant } from "../data/AzureBlobData";
 import { getMockAzureBlobData } from "../data/mockData";
+import { fetchEntraIdUsersAndGroups } from "./entraIdFetcher";
 
-export async function fetchAzureBlobData(): Promise<AzureManagementGroup> {
+export async function fetchAzureBlobData(): Promise<AzureTenant> {
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
   if (!connectionString || connectionString === "your_connection_string") {
@@ -60,10 +61,22 @@ export async function fetchAzureBlobData(): Promise<AzureManagementGroup> {
 
   const storageAccount = new AzureBlobStorage(accountName, containers);
   
-  // Dummy wrappers
+  // Dummy wrappers for Resource Group, Subscription, Management Group
   const resourceGroup = new AzureResourceGroup("rg-default", [storageAccount]);
   const subscription = new AzureSubscription("sub-default", [resourceGroup]);
   const managementGroup = new AzureManagementGroup("Tenant Root Group", [subscription]);
 
-  return managementGroup;
+  // Fetch real or mocked users & groups based on identity settings
+  const { users, groups, apps, tenantName } = await fetchEntraIdUsersAndGroups();
+
+  let finalTenantDomain = "Default Directory (Entra ID)";
+  if (tenantName) {
+    finalTenantDomain = tenantName;
+  } else if (process.env.AZURE_TENANT_ID && process.env.AZURE_TENANT_ID !== 'your_tenant_id') {
+    finalTenantDomain = process.env.AZURE_TENANT_ID;
+  }
+
+  const tenant = new AzureTenant(finalTenantDomain, [managementGroup], users, groups, apps);
+
+  return tenant;
 }

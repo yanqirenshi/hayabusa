@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AzureManagementGroup } from "../data/AzureBlobData";
+import { AzureTenant } from "../data/AzureBlobData";
 import { AzureBlobDrawing } from "../drawing/AzureBlobDrawing";
 import AzureBlobGroup from "./AzureBlobGroup";
 import { IDrawingNode } from "@/core/interfaces";
 
-export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }: { dbData: AzureManagementGroup, rootX?: number, rootY?: number }) {
+export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }: { dbData: AzureTenant, rootX?: number, rootY?: number }) {
   const [nodes, setNodes] = useState<IDrawingNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<IDrawingNode | null>(null);
 
