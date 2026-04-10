@@ -1,7 +1,7 @@
 "use server";
 
 import { BlobServiceClient } from "@azure/storage-blob";
-import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureTenant } from "../data/AzureBlobData";
+import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureTenant, AzureContainerRegistry, AzureBatch, AzureDevOps, AzureRepo, AzurePipeline } from "../data/AzureBlobData";
 import { getMockAzureBlobData } from "../data/mockData";
 import { fetchEntraIdUsersAndGroups } from "./entraIdFetcher";
 
@@ -60,9 +60,11 @@ export async function fetchAzureBlobData(): Promise<AzureTenant> {
   }
 
   const storageAccount = new AzureBlobStorage(accountName, containers);
+  const acr = new AzureContainerRegistry("crhayabusa");
+  const batch = new AzureBatch("batchhayabusa");
   
   // Dummy wrappers for Resource Group, Subscription, Management Group
-  const resourceGroup = new AzureResourceGroup("rg-default", [storageAccount]);
+  const resourceGroup = new AzureResourceGroup("rg-default", [storageAccount, acr, batch]);
   const subscription = new AzureSubscription("sub-default", [resourceGroup]);
   const managementGroup = new AzureManagementGroup("Tenant Root Group", [subscription]);
 
@@ -76,7 +78,16 @@ export async function fetchAzureBlobData(): Promise<AzureTenant> {
     finalTenantDomain = process.env.AZURE_TENANT_ID;
   }
 
-  const tenant = new AzureTenant(finalTenantDomain, [managementGroup], users, groups, apps);
+  const devOps = [
+    new AzureDevOps("HayabusaOrg", [
+      new AzureRepo("hayabusa-core", "repo-01"),
+      new AzureRepo("hayabusa-ui", "repo-02")
+    ], [
+      new AzurePipeline("CI-CD-Pipeline", "pipe-01")
+    ])
+  ];
+
+  const tenant = new AzureTenant(finalTenantDomain, [managementGroup], users, groups, apps, devOps);
 
   return tenant;
 }

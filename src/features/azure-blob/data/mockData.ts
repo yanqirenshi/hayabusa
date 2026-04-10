@@ -1,4 +1,4 @@
-import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureResourceGroup, AzureSubscription, AzureManagementGroup, AzureTenant, AzureEntraUser, AzureEntraGroup } from "./AzureBlobData";
+import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureResourceGroup, AzureSubscription, AzureManagementGroup, AzureTenant, AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureContainerRegistry, AzureBatch, AzureDevOps, AzureRepo, AzurePipeline } from "./AzureBlobData";
 
 export function getMockAzureBlobData(): AzureTenant {
   const storageAccount = new AzureBlobStorage("ukiyostorageaccount", [
@@ -21,7 +21,10 @@ export function getMockAzureBlobData(): AzureTenant {
     ], []),
   ]);
 
-  const resourceGroup = new AzureResourceGroup("rg-data-platform-prd", [storageAccount]);
+  const acr = new AzureContainerRegistry("crhayabusa");
+  const batch = new AzureBatch("batchhayabusa");
+
+  const resourceGroup = new AzureResourceGroup("rg-data-platform-prd", [storageAccount, acr, batch]);
   const subscription = new AzureSubscription("sub-production-workloads", [resourceGroup]);
   const managementGroup = new AzureManagementGroup("mg-enterprise-root", [subscription]);
   
@@ -40,7 +43,16 @@ export function getMockAzureBlobData(): AzureTenant {
     new AzureEntraApp("Hayabusa Data Importer (Mock)", "app-id-data-importer"),
   ];
 
-  const tenant = new AzureTenant("Default Directory (Entra ID)", [managementGroup], users, groups, apps);
+  const devOps = [
+    new AzureDevOps("HayabusaOrg", [
+      new AzureRepo("hayabusa-core", "repo-01"),
+      new AzureRepo("hayabusa-ui", "repo-02")
+    ], [
+      new AzurePipeline("CI-CD-Pipeline", "pipe-01")
+    ])
+  ];
+
+  const tenant = new AzureTenant("Default Directory (Entra ID)", [managementGroup], users, groups, apps, devOps);
 
   return tenant;
 }

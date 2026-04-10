@@ -1,5 +1,5 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
-import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant } from "../data/AzureBlobData";
+import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch } from "../data/AzureBlobData";
 
 const CONFIG = {
   tenantPadding: { top: 65, right: 50, bottom: 50, left: 50 },
@@ -158,7 +158,63 @@ export class AzureBlobDrawing implements IDrawingClass {
       currentX += maxWidth + CONFIG.gap;
     }
 
-    // 4. Management Groups Column
+    // 4. DevOps Column
+    if (tenant.devOps && tenant.devOps.length > 0) {
+      let relativeY = 40;
+      let maxWidth = 280;
+      const devOpsNodes: IDrawingNode[] = [];
+
+      for (const d of tenant.devOps) {
+        // Simple list of Repos and Pipelines
+        for (const r of d.repos) {
+          devOpsNodes.push({
+            id: `azure-devops-repo-${r.id}`,
+            x: 15,
+            y: relativeY,
+            width: maxWidth - 30,
+            height: CONFIG.itemHeight,
+            label: r.name,
+            type: "azure-devops-repo",
+            data: r
+          });
+          relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+        }
+        for (const p of d.pipelines) {
+          devOpsNodes.push({
+            id: `azure-devops-pipe-${p.id}`,
+            x: 15,
+            y: relativeY,
+            width: maxWidth - 30,
+            height: CONFIG.itemHeight,
+            label: p.name,
+            type: "azure-devops-pipeline",
+            data: p
+          });
+          relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+        }
+      }
+
+      const colHeight = Math.max(200, relativeY + 20);
+      if (CONFIG.tenantPadding.top + colHeight > maxOverallHeight) {
+        maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
+      }
+
+      childNodes.push({
+        id: `azure-devops-col`,
+        x: currentX,
+        y: CONFIG.tenantPadding.top,
+        width: maxWidth,
+        height: colHeight,
+        label: "Azure DevOps",
+        type: "azure-devops-container",
+        children: devOpsNodes,
+        data: null
+      });
+
+      currentX += maxWidth + CONFIG.gap;
+    }
+
+    // 5. Management Groups Column
     if (tenant.managementGroups && tenant.managementGroups.length > 0) {
       let mgY = CONFIG.tenantPadding.top;
       let maxMgWidth = 0;
@@ -256,11 +312,22 @@ export class AzureBlobDrawing implements IDrawingClass {
     let maxWidth = 0;
     const childNodes: IDrawingNode[] = [];
 
-    for (const storage of rg.storages) {
-      const storageNode = this.layoutStorageAccount(storage, CONFIG.rgPadding.left, currentY);
-      childNodes.push(storageNode);
-      currentY += storageNode.height + CONFIG.gap;
-      if (storageNode.width > maxWidth) maxWidth = storageNode.width;
+    for (const resource of rg.resources) {
+      let node: IDrawingNode;
+      const res = resource as any;
+      if (res.type === "storage") {
+        node = this.layoutStorageAccount(resource as AzureBlobStorage, CONFIG.rgPadding.left, currentY);
+      } else if (res.type === "acr") {
+        node = this.layoutACR(resource as AzureContainerRegistry, CONFIG.rgPadding.left, currentY);
+      } else if (res.type === "batch") {
+        node = this.layoutBatch(resource as AzureBatch, CONFIG.rgPadding.left, currentY);
+      } else {
+        continue;
+      }
+      
+      childNodes.push(node);
+      currentY += node.height + CONFIG.gap;
+      if (node.width > maxWidth) maxWidth = node.width;
     }
 
     const rgWidth = Math.max(300, CONFIG.rgPadding.left + maxWidth + CONFIG.rgPadding.right);
@@ -276,6 +343,32 @@ export class AzureBlobDrawing implements IDrawingClass {
       type: "azure-resource-group",
       children: childNodes,
       data: rg
+    };
+  }
+
+  private layoutACR(acr: AzureContainerRegistry, startX: number, startY: number): IDrawingNode {
+    return {
+      id: `azure-acr-${acr.name}`,
+      x: startX,
+      y: startY,
+      width: 280,
+      height: 60,
+      label: acr.name,
+      type: "azure-acr",
+      data: acr
+    };
+  }
+
+  private layoutBatch(batch: AzureBatch, startX: number, startY: number): IDrawingNode {
+    return {
+      id: `azure-batch-${batch.name}`,
+      x: startX,
+      y: startY,
+      width: 280,
+      height: 60,
+      label: batch.name,
+      type: "azure-batch",
+      data: batch
     };
   }
 

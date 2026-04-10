@@ -12,7 +12,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     textX = 45;
     textY = 32;
     fontSize = "20px";
-  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container") {
+  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container" || node.type === "azure-devops-container") {
     textX = node.width / 2;
     textY = 20;
     fontSize = "14px";
@@ -29,7 +29,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     textX = 45;
     textY = 30;
     fontSize = "14px";
-  } else if (node.type === "azure-blob-account") {
+  } else if (node.type === "azure-blob-account" || node.type === "azure-acr" || node.type === "azure-batch") {
     textX = node.width / 2;
     textY = 25;
     fontSize = "16px";
@@ -39,20 +39,22 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     textY = 20;
     fontSize = "14px";
     textAnchor = "middle";
-  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item" || node.type === "azure-entra-user" || node.type === "azure-entra-group" || node.type === "azure-entra-app") {
+  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item" || node.type === "azure-entra-user" || node.type === "azure-entra-group" || node.type === "azure-entra-app" || node.type === "azure-devops-repo" || node.type === "azure-devops-pipeline") {
     textX = 30; // Shift right for the icon
     textY = 22;
     fontSize = "13px";
     textAnchor = "start";
   }
 
-  // Icon handling for folder/file
+  // Icon handling
   const isDir = node.type === "azure-blob-directory";
   const isBlob = node.type === "azure-blob-item";
   const isUser = node.type === "azure-entra-user";
   const isGroup = node.type === "azure-entra-group";
   const isApp = node.type === "azure-entra-app";
-  const isItemLike = isDir || isBlob || isUser || isGroup || isApp;
+  const isRepo = node.type === "azure-devops-repo";
+  const isPipe = node.type === "azure-devops-pipeline";
+  const isItemLike = isDir || isBlob || isUser || isGroup || isApp || isRepo || isPipe;
 
   // Box styles based on type
   let fill = "transparent";
@@ -66,7 +68,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     stroke = "#0078D4"; // Azure Blue
     strokeWidth = 3;
     rx = 12;
-  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container") {
+  } else if (node.type === "azure-entra-users-container" || node.type === "azure-entra-groups-container" || node.type === "azure-entra-apps-container" || node.type === "azure-devops-container") {
     fill = "#f8fafc";
     stroke = "#cbd5e1";
     strokeWidth = 1.5;
@@ -88,7 +90,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     strokeWidth = 2;
     dasharray = "4,4";
     rx = 4;
-  } else if (node.type === "azure-blob-account") {
+  } else if (node.type === "azure-blob-account" || node.type === "azure-acr" || node.type === "azure-batch") {
     fill = "#ffffff";
     stroke = "#cbd5e1"; // Slate 300
     strokeWidth = 2;
@@ -102,7 +104,7 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     fill = "#ffffff";
   }
 
-  const isClickableBox = node.type !== "azure-blob-container" && node.type !== "azure-blob-account" && node.type !== "azure-entra-users-container" && node.type !== "azure-entra-groups-container" && node.type !== "azure-entra-apps-container";
+  const isClickableBox = node.type !== "azure-blob-container" && node.type !== "azure-blob-account" && node.type !== "azure-entra-users-container" && node.type !== "azure-entra-groups-container" && node.type !== "azure-entra-apps-container" && node.type !== "azure-devops-container";
 
   return (
     <g 
@@ -132,6 +134,8 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
       {isUser && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>👤</text>}
       {isGroup && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>👥</text>}
       {isApp && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>📦</text>}
+      {isRepo && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>🌿</text>}
+      {isPipe && <text x={8} y={22} fontSize="14px" fill="#64748B" style={{ pointerEvents: "none" }}>🚀</text>}
       {node.type === "azure-tenant" && <text x={15} y={32} fontSize="20px" fill="#0078D4" style={{ pointerEvents: "none" }}>🆔</text>}
       {node.type === "azure-management-group" && <text x={15} y={30} fontSize="18px" fill="#475569" style={{ pointerEvents: "none" }}>🏢</text>}
       {node.type === "azure-subscription" && <text x={15} y={30} fontSize="18px" fill="#D97706" style={{ pointerEvents: "none" }}>🔑</text>}
@@ -156,11 +160,26 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
         {node.label}
       </text>
 
-      {/* Azure Header Logo for Account */}
+      {/* Azure Header Logos */}
       {node.type === "azure-blob-account" && (
         <g>
           <rect x={0} y={0} width={40} height={40} fill="#0072C6" />
           <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">☁</text>
+          <text x={45} y={15} fontSize="10px" fill="#64748B" fontWeight="normal">Storage Account</text>
+        </g>
+      )}
+      {node.type === "azure-acr" && (
+        <g>
+          <rect x={0} y={0} width={40} height={40} fill="#0078D4" />
+          <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">📦</text>
+          <text x={45} y={15} fontSize="10px" fill="#64748B" fontWeight="normal">Container Registry</text>
+        </g>
+      )}
+      {node.type === "azure-batch" && (
+        <g>
+          <rect x={0} y={0} width={40} height={40} fill="#0078D4" />
+          <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">🧮</text>
+          <text x={45} y={15} fontSize="10px" fill="#64748B" fontWeight="normal">Batch Account</text>
         </g>
       )}
 

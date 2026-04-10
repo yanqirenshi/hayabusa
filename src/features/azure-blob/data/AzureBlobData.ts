@@ -26,6 +26,7 @@ export class AzureBlobContainer {
 }
 
 export class AzureBlobStorage {
+  public type = "storage" as const;
   constructor(
     public accountName: string,
     public containers: AzureBlobContainer[],
@@ -35,7 +36,7 @@ export class AzureBlobStorage {
 export class AzureResourceGroup {
   constructor(
     public name: string,
-    public storages: AzureBlobStorage[] = [],
+    public resources: (AzureBlobStorage | AzureContainerRegistry | AzureBatch)[] = [],
   ) {}
 }
 
@@ -67,6 +68,42 @@ export class AzureEntraApp {
   ) {}
 }
 
+export class AzureRepo {
+  constructor(
+    public name: string,
+    public id: string,
+  ) {}
+}
+
+export class AzurePipeline {
+  constructor(
+    public name: string,
+    public id: string,
+  ) {}
+}
+
+export class AzureDevOps {
+  constructor(
+    public organizationName: string,
+    public repos: AzureRepo[] = [],
+    public pipelines: AzurePipeline[] = [],
+  ) {}
+}
+
+export class AzureContainerRegistry {
+  public type = "acr" as const;
+  constructor(
+    public name: string,
+  ) {}
+}
+
+export class AzureBatch {
+  public type = "batch" as const;
+  constructor(
+    public name: string,
+  ) {}
+}
+
 export class AzureManagementGroup {
   constructor(
     public name: string,
@@ -81,5 +118,6 @@ export class AzureTenant implements IDataClass {
     public users: AzureEntraUser[] = [],
     public groups: AzureEntraGroup[] = [],
     public apps: AzureEntraApp[] = [],
+    public devOps: AzureDevOps[] = [],
   ) {}
 }
