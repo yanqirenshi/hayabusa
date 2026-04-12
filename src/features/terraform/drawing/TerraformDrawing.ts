@@ -219,7 +219,12 @@ export class TerraformDrawing implements IDrawingClass {
     // ご要望に合わせ、基本的にはすべて縦並び（Column）に統一します
     const isRowLayout = false;
 
-    const titleWidth = this.getTextWidth(dir.name) + 30;
+    // Use larger padding for the root node to accommodate the icon and title
+    const currentPadding = depth === 0 
+      ? { ...CONFIG.padding, top: 45 } 
+      : CONFIG.padding;
+
+    const titleWidth = this.getTextWidth(dir.name) + 60; // Extra room for icon
     let minGroupWidth = Math.max(CONFIG.minWidth, titleWidth);
 
     const childrenNodes: IDrawingNode[] = [];
@@ -231,8 +236,8 @@ export class TerraformDrawing implements IDrawingClass {
       }
 
       // Now align children based on direction
-      let currentX = CONFIG.padding.left;
-      let currentY = CONFIG.padding.top;
+      let currentX = currentPadding.left;
+      let currentY = currentPadding.top;
       let maxChildSpan = 0;
 
       for (const childNode of childrenNodes) {
@@ -256,11 +261,11 @@ export class TerraformDrawing implements IDrawingClass {
       let contentHeight = 0;
 
       if (isRowLayout) {
-        contentWidth = currentX - CONFIG.gap + CONFIG.padding.right;
-        contentHeight = CONFIG.padding.top + maxChildSpan + CONFIG.padding.bottom;
+        contentWidth = currentX - CONFIG.gap + currentPadding.right;
+        contentHeight = currentPadding.top + maxChildSpan + currentPadding.bottom;
       } else {
-        contentWidth = CONFIG.padding.left + maxChildSpan + CONFIG.padding.right;
-        contentHeight = currentY - CONFIG.gap + CONFIG.padding.bottom;
+        contentWidth = currentPadding.left + maxChildSpan + currentPadding.right;
+        contentHeight = currentY - CONFIG.gap + currentPadding.bottom;
       }
 
       return {

@@ -167,32 +167,57 @@ async function scanDirectory(currentPath: string, dirName: string): Promise<Terr
 }
 
 /**
- * Fetches the base folder tree structure for the specified Terraform root path
+ * Fetches the base folder tree structure for the specified Terraform root path(s).
+ * Supports comma-separated paths in TERRAFORM_ROOT_PATH.
  */
 export async function fetchTerraformStructure(): Promise<TerraformDirectory | null> {
-  const rootPath = process.env.TERRAFORM_ROOT_PATH;
+  const envPath = process.env.TERRAFORM_ROOT_PATH;
 
-  if (!rootPath) {
+  if (!envPath) {
     console.warn("⚠️ TERRAFORM_ROOT_PATH is not configured in .env.local.");
     return null;
   }
 
-  try {
-    const stat = await fs.stat(rootPath);
-    if (!stat.isDirectory()) {
-      throw new Error("Specified path is not a directory");
-    }
+  // Split by comma and filter out empty strings
+  const rootPaths = envPath.split(",").map(p => p.trim()).filter(p => p.length > 0);
 
-    const rootDirName = path.basename(rootPath);
-    const result = await scanDirectory(rootPath, rootDirName);
-    
-    if (!result) {
-      throw new Error("Could not parse root directory tree.");
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error("Terraform scan error:", error.message);
-    throw new Error(`Failed to scan Terraform directory: ${error.message}`);
+  if (rootPaths.length === 0) {
+    console.warn("⚠️ TERRAFORM_ROOT_PATH contains no valid paths.");
+    return null;
   }
+
+  const results: TerraformDirectory[] = [];
+
+  for (const rootPath of rootPaths) {
+    try {
+      const stat = await fs.stat(rootPath);
+      if (!stat.isDirectory()) {
+        console.warn(`[Terraform] Skipped ${rootPath}: Not a directory`);
+        continue;
+      }
+
+      const rootDirName = rootPaths.length > 1 ? rootPath : path.basename(rootPath);
+      const result = await scanDirectory(rootPath, rootDirName);
+      
+      if (result) {
+        results.push(result);
+      } else {
+        console.warn(`[Terraform] Skipped ${rootPath}: Could not parse directory tree.`);
+      }
+    } catch (error: any) {
+      console.error(`[Terraform] Error scanning ${rootPath}:`, error.message);
+    }
+  }
+
+  if (results.length === 0) {
+    throw new Error("Failed to scan any of the specified Terraform directories.");
+  }
+
+  // If there's only one root, return it as is.
+  if (results.length === 1) {
+    return results[0];
+  }
+
+  // If there are multiple roots, wrap them in a virtual "terraform" root.
+  return new TerraformDirectory("terraform", "virtual-root", results, []);
 }

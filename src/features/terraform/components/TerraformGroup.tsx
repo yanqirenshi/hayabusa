@@ -7,9 +7,22 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0, onNodeCl
     return (
       <g transform={`translate(${rootX}, ${rootY})`}>
         <rect width={node.width} height={node.height} fill="#ffffff" stroke="#9ca3af" strokeWidth={depth === 0 ? 3 : 1} rx={4} ry={4} />
-        <text x={10} y={20} fill="#374151" fontSize="13" fontWeight="bold" fontFamily="Arial, sans-serif">
-          {node.label}/
-        </text>
+        {depth === 0 ? (
+          <g>
+            <path 
+              d="M0 0l2.2 1.3v5.2L0 5.2V0zm2.6 1.6l2.2 1.3v5.2l-2.2-1.3V1.6zM0 6.6l2.2 1.3v5.2L0 11.8V6.6zm2.6 1.6l2.2 1.3v5.2l-2.2-1.3V8.2z" 
+              fill="#844FBA" 
+              transform="translate(10, 7) scale(1.6)"
+            />
+            <text x={35} y={20} fill="#374151" fontSize="14" fontWeight="bold" fontFamily="Inter, Arial, sans-serif">
+              Terraform
+            </text>
+          </g>
+        ) : (
+          <text x={10} y={20} fill="#374151" fontSize="13" fontWeight="bold" fontFamily="Arial, sans-serif">
+            {node.label}/
+          </text>
+        )}
         {node.children && node.children.map((childNode, index) => (
           <TerraformGroup key={`${childNode.id}-${index}`} node={childNode} rootX={childNode.x} rootY={childNode.y} depth={depth + 1} onNodeClick={onNodeClick} />
         ))}
