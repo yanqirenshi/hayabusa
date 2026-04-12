@@ -1,5 +1,5 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
-import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch } from "../data/AzureBlobData";
+import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
 
 const CONFIG = {
   tenantPadding: { top: 65, right: 50, bottom: 50, left: 50 },
@@ -321,6 +321,8 @@ export class AzureBlobDrawing implements IDrawingClass {
         node = this.layoutACR(resource as AzureContainerRegistry, CONFIG.rgPadding.left, currentY);
       } else if (res.type === "batch") {
         node = this.layoutBatch(resource as AzureBatch, CONFIG.rgPadding.left, currentY);
+      } else if (res.type === "adf") {
+        node = this.layoutADF(resource as AzureDataFactory, CONFIG.rgPadding.left, currentY);
       } else {
         continue;
       }
@@ -347,14 +349,36 @@ export class AzureBlobDrawing implements IDrawingClass {
   }
 
   private layoutACR(acr: AzureContainerRegistry, startX: number, startY: number): IDrawingNode {
+    let currentItemY = CONFIG.containerPadding.top;
+    const childNodes: IDrawingNode[] = [];
+    const maxItemWidth = CONFIG.itemWidth;
+
+    for (const repo of acr.repositories) {
+      childNodes.push({
+        id: `azure-acr-${acr.name}-repo-${repo}`,
+        x: CONFIG.containerPadding.left,
+        y: currentItemY,
+        width: maxItemWidth,
+        height: CONFIG.itemHeight,
+        label: repo,
+        type: "azure-container-repository",
+        data: repo
+      });
+      currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
+    }
+
+    const acrWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
+    const acrHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
+
     return {
       id: `azure-acr-${acr.name}`,
       x: startX,
       y: startY,
-      width: 280,
-      height: 60,
+      width: acrWidth,
+      height: acrHeight,
       label: acr.name,
       type: "azure-acr",
+      children: childNodes,
       data: acr
     };
   }
@@ -369,6 +393,41 @@ export class AzureBlobDrawing implements IDrawingClass {
       label: batch.name,
       type: "azure-batch",
       data: batch
+    };
+  }
+
+  private layoutADF(adf: AzureDataFactory, startX: number, startY: number): IDrawingNode {
+    let currentItemY = CONFIG.containerPadding.top;
+    const childNodes: IDrawingNode[] = [];
+    const maxItemWidth = CONFIG.itemWidth;
+
+    for (const pipeline of adf.pipelines) {
+      childNodes.push({
+        id: `azure-adf-${adf.name}-pipeline-${pipeline.name}`,
+        x: CONFIG.containerPadding.left,
+        y: currentItemY,
+        width: maxItemWidth,
+        height: CONFIG.itemHeight,
+        label: pipeline.name,
+        type: "azure-adf-pipeline",
+        data: pipeline
+      });
+      currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
+    }
+
+    const adfWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
+    const adfHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
+
+    return {
+      id: `azure-adf-${adf.name}`,
+      x: startX,
+      y: startY,
+      width: adfWidth,
+      height: adfHeight,
+      label: adf.name,
+      type: "azure-adf",
+      children: childNodes,
+      data: adf
     };
   }
 

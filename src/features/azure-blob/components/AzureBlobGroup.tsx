@@ -52,8 +52,8 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
   const isUser = node.type === "azure-entra-user";
   const isGroup = node.type === "azure-entra-group";
   const isApp = node.type === "azure-entra-app";
-  const isRepo = node.type === "azure-devops-repo";
-  const isPipe = node.type === "azure-devops-pipeline";
+  const isRepo = node.type === "azure-devops-repo" || node.type === "azure-container-repository";
+  const isPipe = node.type === "azure-devops-pipeline" || node.type === "azure-adf-pipeline";
   const isItemLike = isDir || isBlob || isUser || isGroup || isApp || isRepo || isPipe;
 
   // Box styles based on type
@@ -180,6 +180,13 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
           <rect x={0} y={0} width={40} height={40} fill="#0078D4" />
           <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">🧮</text>
           <text x={45} y={15} fontSize="10px" fill="#64748B" fontWeight="normal">Batch Account</text>
+        </g>
+      )}
+      {node.type === "azure-adf" && (
+        <g>
+          <rect x={0} y={0} width={40} height={40} fill="#F2AB27" />
+          <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">🏭</text>
+          <text x={45} y={15} fontSize="10px" fill="#64748B" fontWeight="normal">Data Factory</text>
         </g>
       )}
 

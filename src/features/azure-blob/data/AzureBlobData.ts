@@ -36,7 +36,7 @@ export class AzureBlobStorage {
 export class AzureResourceGroup {
   constructor(
     public name: string,
-    public resources: (AzureBlobStorage | AzureContainerRegistry | AzureBatch)[] = [],
+    public resources: (AzureBlobStorage | AzureContainerRegistry | AzureBatch | AzureDataFactory)[] = [],
   ) {}
 }
 
@@ -94,6 +94,7 @@ export class AzureContainerRegistry {
   public type = "acr" as const;
   constructor(
     public name: string,
+    public repositories: string[] = [],
   ) {}
 }
 
@@ -101,6 +102,20 @@ export class AzureBatch {
   public type = "batch" as const;
   constructor(
     public name: string,
+  ) {}
+}
+
+export class AzureDataFactoryPipeline {
+  constructor(
+    public name: string,
+  ) {}
+}
+
+export class AzureDataFactory {
+  public type = "adf" as const;
+  constructor(
+    public name: string,
+    public pipelines: AzureDataFactoryPipeline[] = [],
   ) {}
 }
 
