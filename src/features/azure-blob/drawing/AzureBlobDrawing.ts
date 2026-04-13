@@ -2,12 +2,12 @@ import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
 
 const CONFIG = {
-  tenantPadding: { top: 65, right: 50, bottom: 50, left: 50 },
-  mgPadding: { top: 60, right: 40, bottom: 40, left: 40 },
-  subPadding: { top: 60, right: 40, bottom: 40, left: 40 },
-  rgPadding: { top: 60, right: 40, bottom: 40, left: 40 },
-  accountPadding: { top: 60, right: 30, bottom: 30, left: 30 },
-  containerPadding: { top: 65, right: 20, bottom: 20, left: 20 },
+  tenantPadding: { top: 50, right: 50, bottom: 50, left: 50 },
+  mgPadding: { top: 45, right: 40, bottom: 40, left: 40 },
+  subPadding: { top: 45, right: 40, bottom: 40, left: 40 },
+  rgPadding: { top: 45, right: 40, bottom: 40, left: 40 },
+  accountPadding: { top: 45, right: 30, bottom: 30, left: 30 },
+  containerPadding: { top: 52, right: 20, bottom: 20, left: 20 },
   gap: 40,
   itemGap: 10,
   itemWidth: 220,
