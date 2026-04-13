@@ -65,14 +65,6 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode) => vo
         {node.label}
       </text>
 
-      {/* Snowflake Logo on Database root */}
-      {node.type === "database" && (
-        <>
-          <rect x={0} y={0} width={40} height={40} fill="#29B5E8" />
-          <text x={20} y={25} textAnchor="middle" fill="white" fontSize="20px">❄</text>
-        </>
-      )}
-
       {node.children && node.children.map((child) => renderNode(child, onNodeClick))}
     </g>
   );

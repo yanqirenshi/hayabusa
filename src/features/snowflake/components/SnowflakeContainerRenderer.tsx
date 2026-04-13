@@ -200,9 +200,10 @@ export default function SnowflakeContainerRenderer({
   const { dbNodes, dbWidth, dbHeight, roleNodes, roleEdges, roleWidth, roleHeight } = layout;
 
   // ---- Container dimensions ----
+  const CONTENT_Y      = 50;   // Top offset for the main Snowflake diagram to clear the logo
   const hasRole       = roleNodes.length > 0;
   const innerWidth    = Math.max(dbWidth, roleWidth);
-  const roleOffsetY   = PADDING + dbHeight + (hasRole ? SECTION_GAP : 0);
+  const roleOffsetY   = CONTENT_Y + dbHeight + (hasRole ? SECTION_GAP : 0);
   const containerW    = innerWidth + PADDING * 2;
   const containerH    = roleOffsetY + (hasRole ? roleHeight : 0) + PADDING;
 
@@ -216,6 +217,7 @@ export default function SnowflakeContainerRenderer({
   const visibleRoleNodes = roleNodes.filter(n => n.type.startsWith("role-node-"));
 
   // ---- Inspector rendering ----
+  // (renderInspector logic...)
   const renderInspector = () => {
     if (!selectedNode || typeof document === 'undefined') return null;
     
@@ -318,8 +320,16 @@ export default function SnowflakeContainerRenderer({
           rx={8} ry={8}
         />
 
+        {/* Snowflake Logo Badge at container top-left */}
+        <g>
+          <rect x={0} y={0} width={40} height={40} fill="#29B5E8" rx={8} />  {/* Align rx with container corner */}
+          <rect x={10} y={0} width={30} height={40} fill="#29B5E8" />      {/* Mask the right corner rx for integrated look */}
+          <rect x={0} y={10} width={40} height={30} fill="#29B5E8" />      {/* Mask the bottom corner rx */}
+          <text x={20} y={27} textAnchor="middle" fill="white" fontSize="24px">❄</text>
+        </g>
+
         {/* DB diagram */}
-        <SnowflakeGroup nodes={dbNodes} x={PADDING} y={PADDING} onNodeClick={handleNodeSelect} />
+        <SnowflakeGroup nodes={dbNodes} x={PADDING} y={CONTENT_Y} onNodeClick={handleNodeSelect} />
 
         {/* Role hierarchy diagram */}
         {hasRole && (
