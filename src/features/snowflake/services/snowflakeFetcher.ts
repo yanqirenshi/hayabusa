@@ -155,7 +155,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
       schemas.push(new SnowflakeSchema(schemaName, objectGroups));
     }
 
-    return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas));
+    return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas), org, targetAccount);
   } catch (error: any) {
     console.error("Snowflake fetch error:", error);
     throw new Error(`Failed to fetch Snowflake data: ${error.message || JSON.stringify(error)}`);
@@ -227,11 +227,13 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
       })
     );
 
-    const roles = Array.from(roleMap.entries()).map(
-      ([name, parents]) => new SnowflakeRole(name, parents, rolePropsMap.get(name))
-    );
-
-    return new SnowflakeRoleGraph(roles);
+    return {
+      roles: Array.from(roleMap.entries()).map(
+        ([name, parents]) => new SnowflakeRole(name, parents, rolePropsMap.get(name))
+      ),
+      organization: org,
+      account: targetAccount
+    };
   } catch (error: any) {
     console.error("Snowflake role fetch error:", error);
     throw new Error(`Failed to fetch Snowflake roles: ${error.message}`);

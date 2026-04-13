@@ -260,6 +260,45 @@ export default function SnowflakeContainerRenderer({
       contentString = JSON.stringify({ type: blockType, name: headerTitle }, null, 2);
     }
 
+    const generateSnowflakeUrl = (node: IDrawingNode) => {
+      const org = dbData.organization || roleData?.organization;
+      const acc = dbData.account || roleData?.account;
+      if (!org || !acc) return null;
+
+      const baseUrl = `https://app.snowflake.com/${org}/${acc}/#`;
+      const data = node.data;
+
+      // Handle Role linking
+      if (node.type && node.type.startsWith("role-node-")) {
+        return `${baseUrl}/admin/roles/${node.label}`;
+      }
+
+      // Handle Data Object linking
+      if (data && data.databaseName && data.schemaName) {
+        let typeSlug = data.type?.toLowerCase() || "";
+        if (typeSlug === "materialized view") typeSlug = "view";
+        // Convert "ファイル形式" (File Format) back to the URL slug if needed, but fetcher uses "ファイル形式" label.
+        // Actually, let's Map labels to Slugs.
+        const typeMap: Record<string, string> = {
+          "Table": "table",
+          "View": "view",
+          "Materialized View": "view",
+          "Stage": "stage",
+          "ファイル形式": "file-format",
+          "Pipe": "pipe",
+          "Stream": "stream",
+          "Task": "task",
+          "Sequence": "sequence"
+        };
+        const slug = typeMap[data.type] || typeSlug;
+        return `${baseUrl}/data/databases/${data.databaseName}/schemas/${data.schemaName}/${slug}/${data.name}`;
+      }
+
+      return null;
+    };
+
+    const portalUrl = generateSnowflakeUrl(selectedNode);
+
     return createPortal(
       <div style={{
         position: "fixed",
@@ -270,10 +309,10 @@ export default function SnowflakeContainerRenderer({
         backgroundColor: "#ffffff",
         borderLeft: "1px solid #e2e8f0",
         boxShadow: "-4px 0 25px rgba(0,0,0,0.1)",
-        zIndex: 50,
+        zIndex: 100,
         display: "flex",
         flexDirection: "column",
-        fontFamily: "sans-serif"
+        fontFamily: "Inter, sans-serif"
       }}>
         {/* Header */}
         <div style={{
@@ -282,11 +321,29 @@ export default function SnowflakeContainerRenderer({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "#f0f9ff" // Light blue subtle accent for Snowflake
+          backgroundColor: "#f0f9ff"
         }}>
-          <div>
+          <div style={{ flex: 1 }}>
             <span style={{ fontSize: "11px", fontWeight: "bold", color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px" }}>{blockType}</span>
             <h2 style={{ fontSize: "16px", fontWeight: "bold", margin: "4px 0 0 0", color: "#0f172a" }}>{headerTitle}</h2>
+            {portalUrl && (
+              <a 
+                href={portalUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  marginTop: "8px",
+                  fontSize: "12px",
+                  color: "#0284c7",
+                  textDecoration: "none",
+                  fontWeight: 500
+                }}
+              >
+                View in Snowflake ↗
+              </a>
+            )}
           </div>
           <button 
             onClick={() => handleNodeSelect(null)} 

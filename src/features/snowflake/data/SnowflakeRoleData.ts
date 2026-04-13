@@ -39,4 +39,6 @@ export interface RolePOJO {
 
 export interface RoleGraphPOJO {
   roles: RolePOJO[];
+  organization?: string;
+  account?: string;
 }

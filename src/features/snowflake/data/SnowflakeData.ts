@@ -28,6 +28,8 @@ export class SnowflakeSchema {
 export class SnowflakeDatabase implements IDataClass {
   constructor(
     public name: string,
-    public schemas: SnowflakeSchema[]
+    public schemas: SnowflakeSchema[],
+    public organization?: string,
+    public account?: string
   ) {}
 }
