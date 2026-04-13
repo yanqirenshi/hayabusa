@@ -30,6 +30,8 @@ export class AzureBlobStorage {
   constructor(
     public accountName: string,
     public containers: AzureBlobContainer[],
+    public subscriptionId?: string,
+    public resourceGroupName?: string,
   ) {}
 }
 
@@ -37,6 +39,7 @@ export class AzureResourceGroup {
   constructor(
     public name: string,
     public resources: (AzureBlobStorage | AzureContainerRegistry | AzureBatch | AzureDataFactory)[] = [],
+    public subscriptionId?: string,
   ) {}
 }
 
@@ -44,6 +47,7 @@ export class AzureSubscription {
   constructor(
     public name: string,
     public resourceGroups: AzureResourceGroup[] = [],
+    public subscriptionId?: string,
   ) {}
 }
 
@@ -72,6 +76,8 @@ export class AzureRepo {
   constructor(
     public name: string,
     public id: string,
+    public organizationName?: string,
+    public projectName?: string,
   ) {}
 }
 
@@ -79,6 +85,8 @@ export class AzurePipeline {
   constructor(
     public name: string,
     public id: string,
+    public organizationName?: string,
+    public projectName?: string,
   ) {}
 }
 
@@ -95,6 +103,8 @@ export class AzureContainerRegistry {
   constructor(
     public name: string,
     public repositories: string[] = [],
+    public subscriptionId?: string,
+    public resourceGroupName?: string,
   ) {}
 }
 
@@ -102,6 +112,8 @@ export class AzureBatch {
   public type = "batch" as const;
   constructor(
     public name: string,
+    public subscriptionId?: string,
+    public resourceGroupName?: string,
   ) {}
 }
 
@@ -116,6 +128,8 @@ export class AzureDataFactory {
   constructor(
     public name: string,
     public pipelines: AzureDataFactoryPipeline[] = [],
+    public subscriptionId?: string,
+    public resourceGroupName?: string,
   ) {}
 }
 

@@ -42,7 +42,12 @@ export async function fetchAzureBlobData(): Promise<AzureTenant> {
         }
         containers.push(new AzureBlobContainer(containerItem.name, directories, blobs));
       }
-      storageAccount = new AzureBlobStorage(accountName, containers);
+      storageAccount = new AzureBlobStorage(
+        accountName, 
+        containers, 
+        process.env.AZURE_SUBSCRIPTION_ID, 
+        "rg-storage" // Default/Placeholder as it's hard to detect RG from connection string
+      );
     } catch (e) {
       console.error("[AzureBlob] Failed to fetch real blob data:", e);
     }

@@ -49,7 +49,7 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
               } catch (repoError) {
                 console.warn(`[ARM] Failed to list repositories for ACR ${acr.name}:`, repoError);
               }
-              resources.push(new AzureContainerRegistry(acr.name, repositories));
+              resources.push(new AzureContainerRegistry(acr.name, repositories, subId, rgName));
             }
           }
         } catch (e) {
@@ -60,7 +60,7 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
         try {
           for await (const batch of batchClient.batchAccount.listByResourceGroup(rgName)) {
             if (batch.name) {
-              resources.push(new AzureBatch(batch.name));
+              resources.push(new AzureBatch(batch.name, subId, rgName));
             }
           }
         } catch (e) {
@@ -82,7 +82,7 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
               } catch (pipeError) {
                 console.warn(`[ARM] Failed to list pipelines for ADF ${factory.name}:`, pipeError);
               }
-              resources.push(new AzureDataFactory(factory.name, pipelines));
+              resources.push(new AzureDataFactory(factory.name, pipelines, subId, rgName));
             }
           }
         } catch (e) {
@@ -90,12 +90,12 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
         }
 
         if (resources.length > 0) {
-          resourceGroups.push(new AzureResourceGroup(rgName, resources));
+          resourceGroups.push(new AzureResourceGroup(rgName, resources, subId));
         }
       }
 
       if (resourceGroups.length > 0) {
-        azureSubscriptions.push(new AzureSubscription(subName, resourceGroups));
+        azureSubscriptions.push(new AzureSubscription(subName, resourceGroups, subId));
       }
     }
   } catch (error) {

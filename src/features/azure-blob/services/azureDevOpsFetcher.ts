@@ -34,7 +34,7 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
         const repos = await gitApi.getRepositories(project.id);
         for (const repo of repos) {
           if (repo.name && repo.id) {
-            allRepos.push(new AzureRepo(repo.name, repo.id));
+            allRepos.push(new AzureRepo(repo.name, repo.id, orgName, project.name));
           }
         }
       } catch (e) {
@@ -46,7 +46,7 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
         const builds = await buildApi.getDefinitions(project.id);
         for (const build of builds) {
           if (build.name && build.id) {
-            allPipelines.push(new AzurePipeline(build.name, build.id.toString()));
+            allPipelines.push(new AzurePipeline(build.name, build.id.toString(), orgName, project.name));
           }
         }
       } catch (e) {
