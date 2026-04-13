@@ -29,17 +29,17 @@ const renderNode = (node: IDrawingNode, onNodeClick?: (node: IDrawingNode | null
     textX = 45;
     textY = 30;
     fontSize = "14px";
-  } else if (node.type === "azure-blob-account" || node.type === "azure-acr" || node.type === "azure-batch") {
-    textX = node.width / 2;
-    textY = 25;
+  } else if (node.type === "azure-blob-account" || node.type === "azure-acr" || node.type === "azure-batch" || node.type === "azure-adf") {
+    textX = 45; // Start to the right of the icon block
+    textY = 32; // Fit below the subtitle
     fontSize = "16px";
-    textAnchor = "middle";
+    textAnchor = "start";
   } else if (node.type === "azure-blob-container") {
     textX = node.width / 2;
     textY = 20;
     fontSize = "14px";
     textAnchor = "middle";
-  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item" || node.type === "azure-entra-user" || node.type === "azure-entra-group" || node.type === "azure-entra-app" || node.type === "azure-devops-repo" || node.type === "azure-devops-pipeline") {
+  } else if (node.type === "azure-blob-directory" || node.type === "azure-blob-item" || node.type === "azure-entra-user" || node.type === "azure-entra-group" || node.type === "azure-entra-app" || node.type === "azure-devops-repo" || node.type === "azure-devops-pipeline" || node.type === "azure-container-repository" || node.type === "azure-adf-pipeline") {
     textX = 30; // Shift right for the icon
     textY = 22;
     fontSize = "13px";
