@@ -6,52 +6,79 @@ import { getMockAzureBlobData } from "../data/mockData";
 import { fetchEntraIdUsersAndGroups } from "./entraIdFetcher";
 import { fetchAzureArmResources } from "./azureArmFetcher";
 import { fetchAzureDevOpsData } from "./azureDevOpsFetcher";
+import { parallelMap } from "@/core/parallel";
+
+async function fetchBlobStorageAccount(
+  connectionString: string
+): Promise<AzureBlobStorage | null> {
+  try {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const accountName = blobServiceClient.accountName;
+
+    // Collect container names first, then fan out per-container listing in parallel.
+    const containerNames: string[] = [];
+    for await (const containerItem of blobServiceClient.listContainers()) {
+      containerNames.push(containerItem.name);
+    }
+
+    const concurrency = Math.max(
+      1,
+      parseInt(process.env.AZURE_BLOB_MAX_PARALLEL || "8", 10) || 8
+    );
+
+    const containers = await parallelMap(containerNames, concurrency, async (name) => {
+      const containerClient = blobServiceClient.getContainerClient(name);
+      const directories: AzureBlobDirectory[] = [];
+      const blobs: AzureBlob[] = [];
+      try {
+        for await (const item of containerClient.listBlobsByHierarchy("/")) {
+          if (item.kind === "prefix") {
+            directories.push(new AzureBlobDirectory(item.name.replace(/\/$/, "")));
+          }
+          // Individual blobs are intentionally skipped (stop at directory level).
+        }
+      } catch (e) {
+        console.warn(`[AzureBlob] Failed to list contents of container ${name}:`, e);
+      }
+      return new AzureBlobContainer(name, directories, blobs);
+    });
+
+    return new AzureBlobStorage(
+      accountName,
+      containers,
+      process.env.AZURE_SUBSCRIPTION_ID,
+      "rg-storage" // Placeholder; RG isn't derivable from connection string.
+    );
+  } catch (e) {
+    console.error("[AzureBlob] Failed to fetch real blob data:", e);
+    return null;
+  }
+}
 
 export async function fetchAzureBlobData(): Promise<AzureTenant> {
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   const isMockMode = !connectionString || connectionString === "your_connection_string";
 
-  // 1. Fetch Entra ID data
-  const { users, groups, apps, tenantName } = await fetchEntraIdUsersAndGroups();
-  let finalTenantName = tenantName || process.env.AZURE_TENANT_ID || "Default Directory";
+  // Fan out the 4 independent sources in parallel — they use different
+  // SDKs / endpoints and don't share state until merge time.
+  const [
+    entra,
+    devOps,
+    armSubscriptions,
+    storageAccountResult,
+  ] = await Promise.all([
+    fetchEntraIdUsersAndGroups(),
+    fetchAzureDevOpsData(),
+    fetchAzureArmResources(),
+    !isMockMode && connectionString
+      ? fetchBlobStorageAccount(connectionString)
+      : Promise.resolve(null),
+  ]);
 
-  // 2. Fetch DevOps data
-  const devOps = await fetchAzureDevOpsData();
-
-  // 3. Fetch ARM Resources (Subs, RGs, ACR, Batch)
-  let subscriptions = await fetchAzureArmResources();
-
-  // 4. Fetch Blob Storage Data (if available)
-  let storageAccount: AzureBlobStorage | null = null;
-  if (!isMockMode && connectionString) {
-    try {
-      const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-      const accountName = blobServiceClient.accountName;
-      const containers: AzureBlobContainer[] = [];
-
-      for await (const containerItem of blobServiceClient.listContainers()) {
-        const containerClient = blobServiceClient.getContainerClient(containerItem.name);
-        const blobs: AzureBlob[] = [];
-        const directories: AzureBlobDirectory[] = [];
-
-        for await (const item of containerClient.listBlobsByHierarchy("/")) {
-          if (item.kind === "prefix") {
-            directories.push(new AzureBlobDirectory(item.name.replace(/\/$/, "")));
-          }
-          // Note: Individual blobs (item.kind === "blob") are skipped per user request to stop at directory level.
-        }
-        containers.push(new AzureBlobContainer(containerItem.name, directories, blobs));
-      }
-      storageAccount = new AzureBlobStorage(
-        accountName, 
-        containers, 
-        process.env.AZURE_SUBSCRIPTION_ID, 
-        "rg-storage" // Default/Placeholder as it's hard to detect RG from connection string
-      );
-    } catch (e) {
-      console.error("[AzureBlob] Failed to fetch real blob data:", e);
-    }
-  }
+  const { users, groups, apps, tenantName } = entra;
+  const finalTenantName = tenantName || process.env.AZURE_TENANT_ID || "Default Directory";
+  let subscriptions = armSubscriptions;
+  const storageAccount = storageAccountResult;
 
   // 5. Fallback or Merge Merge Blob into ARM structure
   if (subscriptions.length === 0) {
@@ -63,8 +90,7 @@ export async function fetchAzureBlobData(): Promise<AzureTenant> {
     // If we have some real data but no ARM, create a dummy structure for the storage account
     if (storageAccount) {
       const rg = new AzureResourceGroup("rg-default", [storageAccount]);
-      const sub = new AzureSubscription("sub-default", [rg]);
-      subscriptions = [new AzureSubscription("Subscription", [sub])];
+      subscriptions = [new AzureSubscription("sub-default", [rg])];
     } else {
       // Create a minimal empty structure to avoid drawing errors
       subscriptions = [new AzureSubscription("No Subscriptions Found", [])];

@@ -39,52 +39,49 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
     }
 
     const { token } = tokenResponse;
+    const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch tenant display name
-    try {
-      const orgRes = await fetch("https://graph.microsoft.com/v1.0/organization?$select=displayName", {
-        headers: { Authorization: `Bearer ${token}` }
+    // Page size is configurable. Microsoft Graph allows $top up to 999.
+    const pageSize = Math.max(1, Math.min(999, parseInt(process.env.AZURE_ENTRA_PAGE_SIZE || "100", 10) || 100));
+
+    // Fire all 4 Graph endpoints in parallel; isolate failures so a single
+    // permission gap doesn't tank the whole batch.
+    const safeFetch = (url: string) =>
+      fetch(url, { headers }).catch((e) => {
+        console.warn(`[EntraID] Network error fetching ${url}:`, e);
+        return null as Response | null;
       });
-      if (orgRes.ok) {
+
+    const [orgRes, usersRes, groupsRes, appsRes] = await Promise.all([
+      safeFetch("https://graph.microsoft.com/v1.0/organization?$select=displayName"),
+      safeFetch(`https://graph.microsoft.com/v1.0/users?$top=${pageSize}&$select=id,displayName,userPrincipalName`),
+      safeFetch(`https://graph.microsoft.com/v1.0/groups?$top=${pageSize}&$select=id,displayName`),
+      safeFetch(`https://graph.microsoft.com/v1.0/applications?$top=${pageSize}&$select=id,displayName,appId`),
+    ]);
+
+    if (orgRes && orgRes.ok) {
+      try {
         const parsedOrg = await orgRes.json();
         if (parsedOrg.value && parsedOrg.value.length > 0) {
           tenantName = parsedOrg.value[0].displayName;
         }
-      } else {
-        console.warn(`[EntraID] Failed to fetch organization info: ${orgRes.status}`);
+      } catch (e) {
+        console.warn("[EntraID] Failed to parse organization response", e);
       }
-    } catch (e) {
-      console.warn("[EntraID] Exception during organization info fetch", e);
+    } else if (orgRes) {
+      console.warn(`[EntraID] Failed to fetch organization info: ${orgRes.status}`);
     }
 
-    // Fetch up to 10 users for demo
-    const usersRes = await fetch("https://graph.microsoft.com/v1.0/users?$top=10&$select=id,displayName,userPrincipalName", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    // Fetch up to 10 groups
-    const groupsRes = await fetch("https://graph.microsoft.com/v1.0/groups?$top=10&$select=id,displayName", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    // Fetch up to 10 apps
-    let appsRes;
-    try {
-      appsRes = await fetch("https://graph.microsoft.com/v1.0/applications?$top=10&$select=id,displayName,appId", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } catch (e) {
-      console.warn("[EntraID] Failed to fetch apps:", e);
-    }
-
-    if (!usersRes.ok || !groupsRes.ok) {
-        throw new Error(`Graph API returned error: users=${usersRes.status}, groups=${groupsRes.status}`);
+    if (!usersRes || !usersRes.ok || !groupsRes || !groupsRes.ok) {
+      throw new Error(
+        `Graph API returned error: users=${usersRes?.status ?? "no-response"}, groups=${groupsRes?.status ?? "no-response"}`
+      );
     }
 
     const parsedUsers = await usersRes.json();
     const parsedGroups = await groupsRes.json();
     let parsedApps: any = { value: [] };
-    
+
     if (appsRes && appsRes.ok) {
       parsedApps = await appsRes.json();
     } else if (appsRes) {
