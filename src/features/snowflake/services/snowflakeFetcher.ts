@@ -1,6 +1,7 @@
 "use server";
 
 import * as fs from "fs";
+import * as crypto from "crypto";
 import snowflake from "snowflake-sdk";
 import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObject } from "../data/SnowflakeData";
 import { getMockSnowflakeData } from "../data/mockData";
@@ -53,14 +54,55 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
       );
       return null;
     }
+
+    // Verify the file is readable before handing the path off to the SDK,
+    // so we get a clear "not found / permission denied" error rather than a
+    // generic auth failure.
     try {
-      base.privateKey = fs.readFileSync(keyPath, "utf-8");
+      fs.accessSync(keyPath, fs.constants.R_OK);
     } catch (e: any) {
-      console.warn(`[Snowflake] Failed to read private key at ${keyPath}:`, e?.message || e);
+      console.warn(`[Snowflake] Cannot read private key at ${keyPath}:`, e?.message || e);
       return null;
     }
-    const passphrase = process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE;
-    if (passphrase) base.privateKeyPass = passphrase;
+
+    // Hand the key path (and optional passphrase) directly to snowflake-sdk.
+    // The SDK calls crypto.createPrivateKey + export internally and skips the
+    // strict isPrivateKey validator that runs when `privateKey` is set as a
+    // string — that validator rejects valid PEMs whose trailing-whitespace
+    // shape does not match its regex (e.g. when Node emits two trailing
+    // newlines on certain platforms). Going via privateKeyPath is the
+    // documented and most robust path.
+    base.privateKeyPath = keyPath;
+
+    // Trim the passphrase: .env values on Windows often pick up trailing CR
+    // or whitespace from editors, which OpenSSL treats as a wrong passphrase
+    // and reports as "interrupted or cancelled".
+    const passphrase = process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE?.trim();
+    if (passphrase) {
+      base.privateKeyPass = passphrase;
+
+      // Pre-flight: verify the key actually decrypts with this passphrase
+      // before we hand it to the SDK. The SDK swallows this into a generic
+      // libcrypto error; doing it here gives a clear actionable message.
+      try {
+        crypto.createPrivateKey({
+          key: fs.readFileSync(keyPath),
+          format: "pem",
+          passphrase,
+        });
+      } catch (e: any) {
+        console.warn(
+          `[Snowflake] Failed to decrypt private key at ${keyPath} ` +
+          `(passphrase length=${passphrase.length}). Check ` +
+          `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE in .env.local — common pitfalls: ` +
+          `wrapping quotes, escaped characters, trailing CR/LF on Windows, ` +
+          `or the key being unencrypted (then leave the passphrase blank). ` +
+          `Original error:`,
+          e?.message || e
+        );
+        return null;
+      }
+    }
   } else {
     // SNOWFLAKE / USERNAME_PASSWORD_MFA / etc — password required
     const password = process.env.SNOWFLAKE_PASSWORD;
