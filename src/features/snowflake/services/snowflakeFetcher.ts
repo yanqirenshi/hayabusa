@@ -1,10 +1,75 @@
 "use server";
 
+import * as fs from "fs";
 import snowflake from "snowflake-sdk";
 import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObject } from "../data/SnowflakeData";
 import { getMockSnowflakeData } from "../data/mockData";
 import { SnowflakeRole, SnowflakeRoleGraph } from "../data/SnowflakeRoleData";
 import { getMockRoleData } from "../data/mockRoleData";
+
+/**
+ * Builds connection options for snowflake-sdk based on environment variables.
+ *
+ * Authentication modes (selected via SNOWFLAKE_AUTHENTICATOR):
+ *   SNOWFLAKE_JWT (recommended for server-side):
+ *     - SNOWFLAKE_PRIVATE_KEY_PATH = /path/to/rsa_key.p8
+ *     - SNOWFLAKE_PRIVATE_KEY_PASSPHRASE = optional passphrase
+ *     Snowflake now mandates MFA for password auth, so key-pair auth is the
+ *     standard for headless usage.
+ *   USERNAME_PASSWORD_MFA:
+ *     - Standard password + MFA cache. Requires interactive first login;
+ *       generally unsuitable for server processes.
+ *   SNOWFLAKE (default if unset):
+ *     - Plain password auth. Will fail on accounts with MFA enforced.
+ *
+ * Common parameters (all modes):
+ *   SNOWFLAKE_ORGANIZATION, SNOWFLAKE_ACCOUNT, SNOWFLAKE_USERNAME
+ *   SNOWFLAKE_ROLE, SNOWFLAKE_WAREHOUSE
+ */
+function buildConnectionOptions(extra?: { database?: string }): snowflake.ConnectionOptions | null {
+  const org = process.env.SNOWFLAKE_ORGANIZATION;
+  const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
+  const username = process.env.SNOWFLAKE_USERNAME;
+  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
+
+  if (!account || !username) return null;
+
+  const authenticator = (process.env.SNOWFLAKE_AUTHENTICATOR || "SNOWFLAKE").toUpperCase();
+
+  const base: any = {
+    account,
+    username,
+    authenticator,
+    role: process.env.SNOWFLAKE_ROLE,
+    warehouse: process.env.SNOWFLAKE_WAREHOUSE,
+    ...(extra?.database ? { database: extra.database } : {}),
+  };
+
+  if (authenticator === "SNOWFLAKE_JWT") {
+    const keyPath = process.env.SNOWFLAKE_PRIVATE_KEY_PATH;
+    if (!keyPath) {
+      console.warn(
+        "[Snowflake] SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT requires SNOWFLAKE_PRIVATE_KEY_PATH."
+      );
+      return null;
+    }
+    try {
+      base.privateKey = fs.readFileSync(keyPath, "utf-8");
+    } catch (e: any) {
+      console.warn(`[Snowflake] Failed to read private key at ${keyPath}:`, e?.message || e);
+      return null;
+    }
+    const passphrase = process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE;
+    if (passphrase) base.privateKeyPass = passphrase;
+  } else {
+    // SNOWFLAKE / USERNAME_PASSWORD_MFA / etc — password required
+    const password = process.env.SNOWFLAKE_PASSWORD;
+    if (!password) return null;
+    base.password = password;
+  }
+
+  return base as snowflake.ConnectionOptions;
+}
 
 /**
  * Sorts schemas according to the SNOWFLAKE_SCHEMA_ORDER environment variable or alphabetically.
@@ -58,15 +123,10 @@ function executeQuery(connection: snowflake.Connection, sqlText: string): Promis
 export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
   const org = process.env.SNOWFLAKE_ORGANIZATION;
   const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
-  const username = process.env.SNOWFLAKE_USERNAME;
-  const password = process.env.SNOWFLAKE_PASSWORD;
   const targetDatabase = process.env.SNOWFLAKE_TARGET_DATABASE;
 
-  // ORG と ACCOUNT が両方存在すれば "org-account" の形式で結合する
-  // (もし単体に "org-acc" と全て書いていた場合などを考慮したフォールバック)
-  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
-
-  if (!account || !username || !password || !targetDatabase) {
+  const connOptions = buildConnectionOptions({ database: targetDatabase });
+  if (!connOptions || !targetDatabase) {
     console.warn("⚠️ Snowflake credentials not fully configured in .env.local. Falling back to mock data.");
     const mockDbData = getMockSnowflakeData();
     mockDbData.schemas = sortSchemas(mockDbData.schemas);
@@ -74,14 +134,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
   }
 
   // Define Snowflake connection
-  const connection = snowflake.createConnection({
-    account,
-    username,
-    password,
-    role: process.env.SNOWFLAKE_ROLE,
-    warehouse: process.env.SNOWFLAKE_WAREHOUSE,
-    database: targetDatabase,
-  });
+  const connection = snowflake.createConnection(connOptions);
 
   try {
     // 1. Establish connection
@@ -155,7 +208,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
       schemas.push(new SnowflakeSchema(schemaName, objectGroups));
     }
 
-    return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas), org, targetAccount);
+    return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas), org, targetAccount || undefined);
   } catch (error: any) {
     console.error("Snowflake fetch error:", error);
     throw new Error(`Failed to fetch Snowflake data: ${error.message || JSON.stringify(error)}`);
@@ -169,71 +222,229 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
   }
 }
 
+type RoleFilterMode = "by-objects" | "all" | "system-only";
+
+const SYSTEM_ROLE_NAMES = new Set([
+  "ACCOUNTADMIN", "SECURITYADMIN", "SYSADMIN", "USERADMIN", "PUBLIC", "ORGADMIN",
+]);
+
 /**
- * Fetches the role hierarchy from Snowflake.
+ * Collects role names that are granted ANY privilege on the given object types.
+ * Uses SHOW GRANTS ON DATABASE / SCHEMA / WAREHOUSE.
+ * Errors (e.g., insufficient privilege on a particular object) are logged and skipped.
+ */
+async function fetchSeedRolesByObjects(
+  connection: snowflake.Connection,
+  targetDatabase: string,
+  warehouses: string[]
+): Promise<Set<string>> {
+  const seed = new Set<string>();
+
+  const collectGrantees = (rows: any[]) => {
+    for (const r of rows) {
+      const grantedTo = (r.granted_to || r.GRANTED_TO || "").toUpperCase();
+      if (grantedTo !== "ROLE") continue;
+      const grantee = (r.grantee_name || r.GRANTEE_NAME) as string | undefined;
+      if (grantee) seed.add(grantee);
+    }
+  };
+
+  // 1. Database-level grants
+  try {
+    const rows = await executeQuery(connection, `SHOW GRANTS ON DATABASE "${targetDatabase}"`);
+    collectGrantees(rows);
+  } catch (e: any) {
+    console.warn(`[Roles] SHOW GRANTS ON DATABASE "${targetDatabase}" failed:`, e?.message || e);
+  }
+
+  // 2. Schema-level grants — discover schemas first
+  let schemaNames: string[] = [];
+  try {
+    const rows = await executeQuery(connection, `SHOW SCHEMAS IN DATABASE "${targetDatabase}"`);
+    schemaNames = rows
+      .map((r: any) => (r.name || r.NAME) as string)
+      .filter((n) => n && n !== "INFORMATION_SCHEMA");
+  } catch (e: any) {
+    console.warn(`[Roles] SHOW SCHEMAS IN DATABASE "${targetDatabase}" failed:`, e?.message || e);
+  }
+
+  await Promise.all(
+    schemaNames.map(async (schemaName) => {
+      try {
+        const rows = await executeQuery(
+          connection,
+          `SHOW GRANTS ON SCHEMA "${targetDatabase}"."${schemaName}"`
+        );
+        collectGrantees(rows);
+      } catch (e: any) {
+        console.warn(`[Roles] SHOW GRANTS ON SCHEMA "${schemaName}" failed:`, e?.message || e);
+      }
+    })
+  );
+
+  // 3. Warehouse-level grants
+  await Promise.all(
+    warehouses.map(async (wh) => {
+      try {
+        const rows = await executeQuery(connection, `SHOW GRANTS ON WAREHOUSE "${wh}"`);
+        collectGrantees(rows);
+      } catch (e: any) {
+        console.warn(`[Roles] SHOW GRANTS ON WAREHOUSE "${wh}" failed:`, e?.message || e);
+      }
+    })
+  );
+
+  return seed;
+}
+
+/**
+ * Walks parent links upward via SHOW GRANTS OF ROLE, expanding the seed set
+ * to include all ancestor roles. Returns a parent-map for every reachable role.
+ *
+ * Processes roles in waves with bounded parallelism (default 8) to avoid
+ * overwhelming the Snowflake connection / warehouse.
+ */
+async function expandToAncestors(
+  connection: snowflake.Connection,
+  seed: Set<string>,
+  concurrency = 8
+): Promise<Map<string, string[]>> {
+  const parentMap = new Map<string, string[]>();
+  const visited = new Set<string>();
+  let queue: string[] = Array.from(seed);
+
+  const fetchParents = async (roleName: string): Promise<string[]> => {
+    try {
+      const grants = await executeQuery(
+        connection,
+        `SHOW GRANTS OF ROLE "${roleName}"`
+      );
+      return grants
+        .filter((g: any) => (g.granted_to || g.GRANTED_TO || "").toUpperCase() === "ROLE")
+        .map((g: any) => (g.grantee_name || g.GRANTEE_NAME) as string);
+    } catch {
+      // Ignore permission errors
+      return [];
+    }
+  };
+
+  while (queue.length > 0) {
+    const nextWave: string[] = [];
+    // Process current queue in chunks of `concurrency`
+    for (let i = 0; i < queue.length; i += concurrency) {
+      const chunk = queue.slice(i, i + concurrency).filter((r) => !visited.has(r));
+      chunk.forEach((r) => visited.add(r));
+      const results = await Promise.all(
+        chunk.map(async (roleName) => ({ roleName, parents: await fetchParents(roleName) }))
+      );
+      for (const { roleName, parents } of results) {
+        parentMap.set(roleName, parents);
+        for (const p of parents) {
+          if (!visited.has(p)) {
+            seed.add(p);
+            nextWave.push(p);
+          }
+        }
+      }
+    }
+    queue = nextWave;
+  }
+
+  return parentMap;
+}
+
+/**
+ * Fetches the role hierarchy from Snowflake, optionally filtered to roles
+ * that touch the target database / its schemas / specific warehouses.
+ *
+ * Filter mode is controlled by SNOWFLAKE_ROLE_FILTER_MODE:
+ *   "by-objects" (default): roles with grants on target DB / schemas / warehouses + ancestors
+ *   "all":                  every role in the account (legacy behavior)
+ *   "system-only":          only the 6 built-in system roles
+ *
  * Falls back to mock data if credentials are not configured.
  */
 export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
   const org = process.env.SNOWFLAKE_ORGANIZATION;
   const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
-  const username = process.env.SNOWFLAKE_USERNAME;
-  const password = process.env.SNOWFLAKE_PASSWORD;
-  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
+  const targetDatabase = process.env.SNOWFLAKE_TARGET_DATABASE;
 
-  if (!account || !username || !password) {
+  const connOptions = buildConnectionOptions({ database: targetDatabase });
+  if (!connOptions) {
     console.warn("⚠️ Snowflake credentials not configured. Using mock role data.");
     return getMockRoleData();
   }
 
-  const connection = snowflake.createConnection({ account, username, password });
+  const mode: RoleFilterMode =
+    (process.env.SNOWFLAKE_ROLE_FILTER_MODE as RoleFilterMode) || "by-objects";
+
+  const connection = snowflake.createConnection(connOptions);
 
   try {
     await new Promise<void>((resolve, reject) => {
       connection.connect((err) => (err ? reject(err) : resolve()));
     });
 
-    // 1. Fetch all roles
+    // Always fetch SHOW ROLES for tier detection / properties lookup
     const rolesData = await executeQuery(connection, "SHOW ROLES");
     const rolePropsMap = new Map<string, any>();
-    const roleNames: string[] = rolesData.map((r: any) => {
+    const allRoleNames: string[] = rolesData.map((r: any) => {
       const name = (r.name || r.NAME) as string;
       rolePropsMap.set(name, r);
       return name;
     });
 
-    // 2. For each role, fetch what roles it's been granted TO (= its parent roles)
-    const roleMap = new Map<string, string[]>(); // roleName -> parentRoleNames
-    for (const roleName of roleNames) {
-      roleMap.set(roleName, []);
+    // Determine the seed set of roles based on filter mode
+    let seed = new Set<string>();
+
+    if (mode === "all") {
+      allRoleNames.forEach((n) => seed.add(n));
+    } else if (mode === "system-only") {
+      for (const n of allRoleNames) {
+        if (SYSTEM_ROLE_NAMES.has(n.toUpperCase())) seed.add(n);
+      }
+    } else {
+      // by-objects (default)
+      if (!targetDatabase) {
+        console.warn(
+          "[Roles] SNOWFLAKE_TARGET_DATABASE is not set. " +
+          "by-objects mode requires it; falling back to system-only."
+        );
+        for (const n of allRoleNames) {
+          if (SYSTEM_ROLE_NAMES.has(n.toUpperCase())) seed.add(n);
+        }
+      } else {
+        // Resolve target warehouses: prefer SNOWFLAKE_TARGET_WAREHOUSES (CSV),
+        // fallback to SNOWFLAKE_WAREHOUSE (single value).
+        const whEnv = process.env.SNOWFLAKE_TARGET_WAREHOUSES;
+        const warehouses = whEnv
+          ? whEnv.split(",").map((s) => s.trim()).filter(Boolean)
+          : (process.env.SNOWFLAKE_WAREHOUSE ? [process.env.SNOWFLAKE_WAREHOUSE] : []);
+
+        seed = await fetchSeedRolesByObjects(connection, targetDatabase, warehouses);
+        console.info(
+          `[Roles] by-objects seed size = ${seed.size} ` +
+          `(db="${targetDatabase}", warehouses=${JSON.stringify(warehouses)})`
+        );
+      }
     }
 
-    await Promise.all(
-      roleNames.map(async (roleName) => {
-        try {
-          const grants = await executeQuery(
-            connection,
-            `SHOW GRANTS OF ROLE "${roleName}"`
-          );
-          const parentRoles = grants
-            .filter((g: any) => {
-              const grantedTo = (g.granted_to || g.GRANTED_TO || "").toUpperCase();
-              return grantedTo === "ROLE";
-            })
-            .map((g: any) => (g.grantee_name || g.GRANTEE_NAME) as string);
-          roleMap.set(roleName, parentRoles);
-        } catch {
-          // Ignore permission errors
-        }
-      })
+    // Expand seed to include all ancestor roles, building parent map along the way.
+    // Bounded parallelism keeps this safe even when seed contains many roles.
+    const parentMap = await expandToAncestors(connection, seed, 8);
+
+    console.info(
+      `[Roles] mode="${mode}" final role count = ${seed.size} ` +
+      `(of ${allRoleNames.length} total in account)`
     );
 
     return {
-      roles: Array.from(roleMap.entries()).map(
-        ([name, parents]) => new SnowflakeRole(name, parents, rolePropsMap.get(name))
+      roles: Array.from(seed).map(
+        (name) => new SnowflakeRole(name, parentMap.get(name) ?? [], rolePropsMap.get(name))
       ),
       organization: org,
-      account: targetAccount
-    };
+      account: targetAccount,
+    } as unknown as SnowflakeRoleGraph;
   } catch (error: any) {
     console.error("Snowflake role fetch error:", error);
     throw new Error(`Failed to fetch Snowflake roles: ${error.message}`);
@@ -250,24 +461,12 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
  * Fetches the DDL (CREATE statement) for a specific Snowflake object
  */
 export async function fetchSnowflakeDDL(objectType: string, databaseName: string, schemaName: string, objectName: string): Promise<string> {
-  const org = process.env.SNOWFLAKE_ORGANIZATION;
-  const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
-  const username = process.env.SNOWFLAKE_USERNAME;
-  const password = process.env.SNOWFLAKE_PASSWORD;
-  const account = (org && targetAccount) ? `${org}-${targetAccount}` : targetAccount;
-
-  if (!account || !username || !password) {
+  const connOptions = buildConnectionOptions({ database: databaseName });
+  if (!connOptions) {
     throw new Error("Snowflake credentials not configured.");
   }
 
-  const connection = snowflake.createConnection({
-    account,
-    username,
-    password,
-    role: process.env.SNOWFLAKE_ROLE,
-    warehouse: process.env.SNOWFLAKE_WAREHOUSE,
-    database: databaseName,
-  });
+  const connection = snowflake.createConnection(connOptions);
 
   try {
     await new Promise<void>((resolve, reject) => {

@@ -10,12 +10,16 @@ import { fetchAdfData } from "@/features/azure-datafactory/services/adfFetcher";
 
 export default async function Home() {
   // 1. Fetch Snowflake metadata from Server safely (Credentials hidden on server)
-  const dbDataClassInstance = await fetchSnowflakeData();
-  
-  // 2. We skip layout computation here and pass the raw data down to the Client.
-  // Next.js restricts passing Class instances from Server to Client Components.
-  // We strip the prototype by stringifying it into a plain object.
-  const dbData = JSON.parse(JSON.stringify(dbDataClassInstance));
+  // We skip layout computation here and pass the raw data down to the Client.
+  // Next.js restricts passing Class instances from Server to Client Components,
+  // so we strip the prototype by stringifying it into a plain object.
+  let dbData: any = null;
+  try {
+    const dbDataClassInstance = await fetchSnowflakeData();
+    dbData = JSON.parse(JSON.stringify(dbDataClassInstance));
+  } catch (error) {
+    console.error("Snowflake DB fetch error:", error);
+  }
 
   // 3. Fetch Terraform directory structure
   let terraformData = null;
@@ -71,12 +75,14 @@ export default async function Home() {
         */}
         <MainCanvasRenderer width={5000} height={2000}>
            {/* Snowflake: DB + Role diagram inside a single container box */}
-           <SnowflakeContainerRenderer
-             dbData={dbData}
-             roleData={roleData}
-             rootX={0}
-             rootY={0}
-           />
+           {dbData && (
+             <SnowflakeContainerRenderer
+               dbData={dbData}
+               roleData={roleData}
+               rootX={0}
+               rootY={0}
+             />
+           )}
 
            {/* Terraform: right column (x=1500) */}
            {terraformData && (
