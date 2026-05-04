@@ -44,3 +44,8 @@ next-env.d.ts
 # snowflake logs
 snowflake.log
 
+# emacs lock & autosave files
+\#*\#
+.\#*
+*~
+
