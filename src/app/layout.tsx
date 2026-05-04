@@ -23,11 +23,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning: only suppresses 1-level mismatches caused by
+    // browser extensions injecting attributes (Grammarly, Dark Reader, password
+    // managers, etc.) into <html> / <body> before React hydrates. Mismatches in
+    // descendants are still reported normally.
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
