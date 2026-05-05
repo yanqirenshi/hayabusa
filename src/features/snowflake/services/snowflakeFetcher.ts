@@ -50,10 +50,10 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
   if (authenticator === "SNOWFLAKE_JWT") {
     const keyPath = process.env.SNOWFLAKE_PRIVATE_KEY_PATH;
     if (!keyPath) {
-      Logger.warn(
+      Logger.error(
         "[Snowflake] SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT requires SNOWFLAKE_PRIVATE_KEY_PATH."
       );
-      return null;
+      throw new Error("SNOWFLAKE_PRIVATE_KEY_PATH is missing in .env.local");
     }
 
     // Verify the file is readable before handing the path off to the SDK,
@@ -62,8 +62,8 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
     try {
       fs.accessSync(keyPath, fs.constants.R_OK);
     } catch (e: any) {
-      Logger.warn(`[Snowflake] Cannot read private key at ${keyPath}:`, e?.message || e);
-      return null;
+      Logger.error(`[Snowflake] Cannot read private key at ${keyPath}:`, e?.message || e);
+      throw new Error(`Cannot read private key at ${keyPath}: ${e?.message || e}`);
     }
 
     // Hand the key path (and optional passphrase) directly to snowflake-sdk.
@@ -92,16 +92,16 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
           passphrase,
         });
       } catch (e: any) {
-        Logger.warn(
+        Logger.error(
           `[Snowflake] Failed to decrypt private key at ${keyPath} ` +
           `(passphrase length=${passphrase.length}). Check ` +
           `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE in .env.local — common pitfalls: ` +
           `wrapping quotes, escaped characters, trailing CR/LF on Windows, ` +
           `or the key being unencrypted (then leave the passphrase blank). ` +
           `Original error:`,
-          e?.message || e
+          e.message
         );
-        return null;
+        throw new Error(`Failed to decrypt Snowflake private key. Check SNOWFLAKE_PRIVATE_KEY_PASSPHRASE.`);
       }
     }
   } else {
@@ -170,10 +170,8 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
   const connOptions = buildConnectionOptions({ database: targetDatabase });
   if (!connOptions || !targetDatabase) {
-    Logger.warn("⚠️ Snowflake credentials not fully configured in .env.local. Falling back to mock data.");
-    const mockDbData = getMockSnowflakeData();
-    mockDbData.schemas = sortSchemas(mockDbData.schemas);
-    return mockDbData;
+    Logger.error("⚠️ Snowflake credentials not fully configured in .env.local.");
+    throw new Error("Snowflake credentials not fully configured in .env.local.");
   }
 
   // Define Snowflake connection
@@ -412,10 +410,10 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
   const targetAccount = process.env.SNOWFLAKE_ACCOUNT;
   const targetDatabase = process.env.SNOWFLAKE_TARGET_DATABASE;
 
-  const connOptions = buildConnectionOptions({ database: targetDatabase });
+  const connOptions = buildConnectionOptions();
   if (!connOptions) {
-    Logger.warn("⚠️ Snowflake credentials not configured. Using mock role data.");
-    return getMockRoleData();
+    Logger.error("⚠️ Snowflake credentials not configured.");
+    throw new Error("Snowflake credentials not configured in .env.local.");
   }
 
   const mode: RoleFilterMode =

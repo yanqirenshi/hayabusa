@@ -20,6 +20,7 @@ export default async function Home() {
   let start = Date.now();
 
   let dbData: any = null;
+  let dbError: string | null = null;
   try {
     start = Date.now();
     Logger.info("[Snowflake] データベース・メタデータの取得を開始します...");
@@ -27,7 +28,8 @@ export default async function Home() {
     dbData = JSON.parse(JSON.stringify(dbDataClassInstance));
     const count = dbData?.schemas?.length || 0;
     Logger.info(`[Snowflake] データベース・メタデータの取得を完了しました（スキーマ: ${count}件, 処理時間: ${Date.now() - start}ms）`);
-  } catch (error) {
+  } catch (error: any) {
+    dbError = error.message || "Snowflake データベースのメタデータ取得に失敗しました";
     Logger.error("[Snowflake] データベース・メタデータの取得に失敗しました:", error);
   }
 
@@ -49,6 +51,7 @@ export default async function Home() {
 
   // 4. Fetch Snowflake role hierarchy
   let roleData = null;
+  let roleError: string | null = null;
   try {
     start = Date.now();
     Logger.info("[Snowflake] ロール階層データの取得を開始します...");
@@ -56,7 +59,8 @@ export default async function Home() {
     roleData = JSON.parse(JSON.stringify(rawRoleData));
     const roleCount = roleData?.nodes?.length || 0;
     Logger.info(`[Snowflake] ロール階層データの取得を完了しました（ロール: ${roleCount}件, 処理時間: ${Date.now() - start}ms）`);
-  } catch (error) {
+  } catch (error: any) {
+    roleError = error.message || "Snowflake ロール階層の取得に失敗しました";
     Logger.error("[Snowflake] ロール階層データの取得に失敗しました:", error);
   }
 
@@ -98,10 +102,12 @@ export default async function Home() {
         */}
         <MainCanvasRenderer width={5000} height={2000}>
            {/* Snowflake: DB + Role diagram inside a single container box */}
-           {dbData && (
+           {(dbData || dbError) && (
              <SnowflakeContainerRenderer
                dbData={dbData}
                roleData={roleData}
+               dbError={dbError}
+               roleError={roleError}
                rootX={0}
                rootY={0}
              />

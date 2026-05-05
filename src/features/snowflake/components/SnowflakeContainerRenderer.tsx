@@ -89,11 +89,15 @@ interface LayoutState {
 export default function SnowflakeContainerRenderer({
   dbData,
   roleData,
+  dbError,
+  roleError,
   rootX = 0,
   rootY = 0,
 }: {
-  dbData:    SnowflakeDatabase;
+  dbData:    SnowflakeDatabase | null;
   roleData:  RoleGraphPOJO | null;
+  dbError?:  string | null;
+  roleError?: string | null;
   rootX?:    number;
   rootY?:    number;
 }) {
@@ -158,12 +162,21 @@ export default function SnowflakeContainerRenderer({
 
   useEffect(() => {
     // ---- DB diagram (13px Arial) ----
-    const dbCanvas = document.createElement("canvas");
-    const dbCtx    = dbCanvas.getContext("2d");
-    if (dbCtx) dbCtx.font = "13px Arial, sans-serif";
-    const dbMeasure = (t: string) => dbCtx ? dbCtx.measureText(t).width : t.length * 9.5;
+    let dbNodes: IDrawingNode[] = [];
+    let dbWidth = 0;
+    let dbHeight = 0;
 
-    const dbDrawing = new SnowflakeDrawing(dbData, dbMeasure);
+    if (dbData) {
+      const dbCanvas = document.createElement("canvas");
+      const dbCtx    = dbCanvas.getContext("2d");
+      if (dbCtx) dbCtx.font = "13px Arial, sans-serif";
+      const dbMeasure = (t: string) => dbCtx ? dbCtx.measureText(t).width : t.length * 9.5;
+
+      const dbDrawing = new SnowflakeDrawing(dbData, dbMeasure);
+      dbNodes = dbDrawing.nodes;
+      dbWidth = dbDrawing.width;
+      dbHeight = dbDrawing.height;
+    }
 
     // ---- Role diagram (11px Inter) ----
     let roleNodes:  IDrawingNode[] = [];
@@ -185,9 +198,9 @@ export default function SnowflakeContainerRenderer({
     }
 
     setLayout({
-      dbNodes:   dbDrawing.nodes,
-      dbWidth:   dbDrawing.width,
-      dbHeight:  dbDrawing.height,
+      dbNodes,
+      dbWidth,
+      dbHeight,
       roleNodes,
       roleEdges,
       roleWidth,
@@ -202,10 +215,12 @@ export default function SnowflakeContainerRenderer({
   // ---- Container dimensions ----
   const CONTENT_Y      = 50;   // Top offset for the main Snowflake diagram to clear the logo
   const hasRole       = roleNodes.length > 0;
-  const innerWidth    = Math.max(dbWidth, roleWidth);
+  
+  const isErrorState = !dbData && !!dbError;
+  const innerWidth    = isErrorState ? 500 : Math.max(dbWidth, roleWidth);
   const roleOffsetY   = CONTENT_Y + dbHeight + (hasRole ? SECTION_GAP : 0);
   const containerW    = innerWidth + PADDING * 2;
-  const containerH    = roleOffsetY + (hasRole ? roleHeight : 0) + PADDING;
+  const containerH    = isErrorState ? 200 : roleOffsetY + (hasRole ? roleHeight : 0) + PADDING;
 
   // ---- Role edge grouping ----
   const nodeMap = new Map<string, IDrawingNode>(roleNodes.map(n => [n.id, n]));
@@ -261,6 +276,7 @@ export default function SnowflakeContainerRenderer({
     }
 
     const generateSnowflakeUrl = (node: IDrawingNode) => {
+      if (!dbData) return null;
       const org = dbData.organization || roleData?.organization;
       const acc = dbData.account || roleData?.account;
       if (!org || !acc) return null;
@@ -385,8 +401,21 @@ export default function SnowflakeContainerRenderer({
           <text x={20} y={27} textAnchor="middle" fill="white" fontSize="24px">❄</text>
         </g>
 
-        {/* DB diagram */}
-        <SnowflakeGroup nodes={dbNodes} x={PADDING} y={CONTENT_Y} onNodeClick={handleNodeSelect} />
+        {/* DB diagram or Error fallback */}
+        {isErrorState ? (
+          <g transform={`translate(${PADDING}, ${CONTENT_Y + 20})`}>
+            <rect x={0} y={0} width={innerWidth} height={100} fill="#fef2f2" stroke="#f87171" strokeWidth={1} rx={4} />
+            <text x={20} y={30} fill="#dc2626" fontSize="14px" fontWeight="bold">認証エラーが発生しました</text>
+            <text x={20} y={55} fill="#7f1d1d" fontSize="12px" width={innerWidth - 40}>
+              {dbError && dbError.length > 60 ? dbError.substring(0, 60) + '...' : dbError}
+            </text>
+            <text x={20} y={75} fill="#7f1d1d" fontSize="12px">
+              詳細は右下のログをご確認ください。
+            </text>
+          </g>
+        ) : (
+          <SnowflakeGroup nodes={dbNodes} x={PADDING} y={CONTENT_Y} onNodeClick={handleNodeSelect} />
+        )}
 
         {/* Role hierarchy diagram */}
         {hasRole && (
