@@ -1,13 +1,14 @@
 import * as azdev from "azure-devops-node-api";
 import { AzureDevOps, AzureRepo, AzurePipeline } from "../data/AzureBlobData";
 import { parallelMap } from "@/core/parallel";
+import { Logger } from "@/core/Logger";
 
 export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
   const orgUrl = process.env.AZURE_DEVOPS_ORG_URL;
   const token = process.env.AZURE_DEVOPS_PAT;
 
   if (!orgUrl || !token || orgUrl === "https://dev.azure.com/your-org") {
-    console.warn("[DevOps] Org URL or PAT not set. Skipping real DevOps data.");
+    Logger.warn("[DevOps] Org URL or PAT not set. Skipping real DevOps data.");
     return [];
   }
 
@@ -38,11 +39,11 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
 
         const [repos, builds] = await Promise.all([
           gitApi.getRepositories(projectId).catch((e) => {
-            console.warn(`[DevOps] Failed to fetch repos for project ${projectName}:`, e);
+            Logger.warn(`[DevOps] Failed to fetch repos for project ${projectName}:`, e);
             return [] as Awaited<ReturnType<typeof gitApi.getRepositories>>;
           }),
           buildApi.getDefinitions(projectId).catch((e) => {
-            console.warn(`[DevOps] Failed to fetch pipelines for project ${projectName}:`, e);
+            Logger.warn(`[DevOps] Failed to fetch pipelines for project ${projectName}:`, e);
             return [] as Awaited<ReturnType<typeof buildApi.getDefinitions>>;
           }),
         ]);
@@ -75,7 +76,7 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
     }
     return [];
   } catch (error) {
-    console.error("[DevOps] Failed to fetch data:", error);
+    Logger.error("[DevOps] Failed to fetch data:", error);
     return [];
   }
 }

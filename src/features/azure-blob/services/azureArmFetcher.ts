@@ -1,6 +1,7 @@
 import { DefaultAzureCredential, TokenCredential } from "@azure/identity";
 import { SubscriptionClient } from "@azure/arm-resources-subscriptions";
 import { ResourceManagementClient } from "@azure/arm-resources";
+import { Logger } from "@/core/Logger";
 import { ContainerRegistryManagementClient } from "@azure/arm-containerregistry";
 import { ContainerRegistryClient } from "@azure/container-registry";
 import { BatchManagementClient } from "@azure/arm-batch";
@@ -35,12 +36,12 @@ async function listAcrsInRg(
           repositories.push(repoName);
         }
       } catch (repoError) {
-        console.warn(`[ARM] Failed to list repositories for ACR ${acr.name}:`, repoError);
+        Logger.warn(`[ARM] Failed to list repositories for ACR ${acr.name}:`, repoError);
       }
       acrs.push(new AzureContainerRegistry(acr.name, repositories, subId, rgName));
     }
   } catch (e) {
-    console.warn(`[ARM] Failed to list ACRs in ${rgName}:`, e);
+    Logger.warn(`[ARM] Failed to list ACRs in ${rgName}:`, e);
   }
   return acrs;
 }
@@ -58,7 +59,7 @@ async function listBatchesInRg(
       }
     }
   } catch (e) {
-    console.warn(`[ARM] Failed to list Batch accounts in ${rgName}:`, e);
+    Logger.warn(`[ARM] Failed to list Batch accounts in ${rgName}:`, e);
   }
   return batches;
 }
@@ -83,14 +84,14 @@ async function listAdfsInRg(
             if (pipeline.name) pipelines.push(new AzureDataFactoryPipeline(pipeline.name));
           }
         } catch (pipeError) {
-          console.warn(`[ARM] Failed to list pipelines for ADF ${f.name}:`, pipeError);
+          Logger.warn(`[ARM] Failed to list pipelines for ADF ${f.name}:`, pipeError);
         }
         return new AzureDataFactory(f.name, pipelines, subId, rgName);
       })
     );
     adfs.push(...factoriesWithPipelines);
   } catch (e) {
-    console.warn(`[ARM] Failed to list Data Factories in ${rgName}:`, e);
+    Logger.warn(`[ARM] Failed to list Data Factories in ${rgName}:`, e);
   }
   return adfs;
 }
@@ -113,7 +114,7 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
       enabledSubs.push({ id: sub.subscriptionId, name: sub.displayName || sub.subscriptionId });
     }
   } catch (error) {
-    console.error("[ARM] Failed to list subscriptions:", error);
+    Logger.error("[ARM] Failed to list subscriptions:", error);
     return [];
   }
 
@@ -130,7 +131,7 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
         if (rg.name) rgNames.push(rg.name);
       }
     } catch (e) {
-      console.warn(`[ARM] Failed to list resource groups in subscription ${sub.name}:`, e);
+      Logger.warn(`[ARM] Failed to list resource groups in subscription ${sub.name}:`, e);
       return null;
     }
 

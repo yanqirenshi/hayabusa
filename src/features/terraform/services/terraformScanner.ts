@@ -3,6 +3,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { TerraformDirectory, TerraformFile } from "../data/TerraformData";
+import { Logger } from "@/core/Logger";
 
 /**
  * Helper to extract the full HCL block string starting from a given index
@@ -161,7 +162,7 @@ async function scanDirectory(currentPath: string, dirName: string): Promise<Terr
 
     return new TerraformDirectory(dirName, currentPath, childDirs, parsedFiles);
   } catch (error) {
-    console.error(`Error scanning directory ${currentPath}:`, error);
+    Logger.error(`Error scanning directory ${currentPath}:`, error);
     return null;
   }
 }
@@ -174,7 +175,7 @@ export async function fetchTerraformStructure(): Promise<TerraformDirectory | nu
   const envPath = process.env.TERRAFORM_ROOT_PATH;
 
   if (!envPath) {
-    console.warn("⚠️ TERRAFORM_ROOT_PATH is not configured in .env.local.");
+    Logger.warn("⚠️ TERRAFORM_ROOT_PATH is not configured in .env.local.");
     return null;
   }
 
@@ -182,7 +183,7 @@ export async function fetchTerraformStructure(): Promise<TerraformDirectory | nu
   const rootPaths = envPath.split(",").map(p => p.trim()).filter(p => p.length > 0);
 
   if (rootPaths.length === 0) {
-    console.warn("⚠️ TERRAFORM_ROOT_PATH contains no valid paths.");
+    Logger.warn("⚠️ TERRAFORM_ROOT_PATH contains no valid paths.");
     return null;
   }
 
@@ -192,7 +193,7 @@ export async function fetchTerraformStructure(): Promise<TerraformDirectory | nu
     try {
       const stat = await fs.stat(rootPath);
       if (!stat.isDirectory()) {
-        console.warn(`[Terraform] Skipped ${rootPath}: Not a directory`);
+        Logger.warn(`[Terraform] Skipped ${rootPath}: Not a directory`);
         continue;
       }
 
@@ -202,10 +203,10 @@ export async function fetchTerraformStructure(): Promise<TerraformDirectory | nu
       if (result) {
         results.push(result);
       } else {
-        console.warn(`[Terraform] Skipped ${rootPath}: Could not parse directory tree.`);
+        Logger.warn(`[Terraform] Skipped ${rootPath}: Could not parse directory tree.`);
       }
     } catch (error: any) {
-      console.error(`[Terraform] Error scanning ${rootPath}:`, error.message);
+      Logger.error(`[Terraform] Error scanning ${rootPath}:`, error.message);
     }
   }
 

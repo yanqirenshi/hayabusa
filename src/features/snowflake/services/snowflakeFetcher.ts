@@ -3,6 +3,7 @@
 import * as fs from "fs";
 import * as crypto from "crypto";
 import snowflake from "snowflake-sdk";
+import { Logger } from "@/core/Logger";
 import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObject } from "../data/SnowflakeData";
 import { getMockSnowflakeData } from "../data/mockData";
 import { SnowflakeRole, SnowflakeRoleGraph } from "../data/SnowflakeRoleData";
@@ -49,7 +50,7 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
   if (authenticator === "SNOWFLAKE_JWT") {
     const keyPath = process.env.SNOWFLAKE_PRIVATE_KEY_PATH;
     if (!keyPath) {
-      console.warn(
+      Logger.warn(
         "[Snowflake] SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT requires SNOWFLAKE_PRIVATE_KEY_PATH."
       );
       return null;
@@ -61,7 +62,7 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
     try {
       fs.accessSync(keyPath, fs.constants.R_OK);
     } catch (e: any) {
-      console.warn(`[Snowflake] Cannot read private key at ${keyPath}:`, e?.message || e);
+      Logger.warn(`[Snowflake] Cannot read private key at ${keyPath}:`, e?.message || e);
       return null;
     }
 
@@ -91,7 +92,7 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
           passphrase,
         });
       } catch (e: any) {
-        console.warn(
+        Logger.warn(
           `[Snowflake] Failed to decrypt private key at ${keyPath} ` +
           `(passphrase length=${passphrase.length}). Check ` +
           `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE in .env.local — common pitfalls: ` +
@@ -169,7 +170,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
   const connOptions = buildConnectionOptions({ database: targetDatabase });
   if (!connOptions || !targetDatabase) {
-    console.warn("⚠️ Snowflake credentials not fully configured in .env.local. Falling back to mock data.");
+    Logger.warn("⚠️ Snowflake credentials not fully configured in .env.local. Falling back to mock data.");
     const mockDbData = getMockSnowflakeData();
     mockDbData.schemas = sortSchemas(mockDbData.schemas);
     return mockDbData;
@@ -218,7 +219,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
       // 全種類のオブジェクトを並列でフェッチ（権限エラー等で落ちないように catch で空配列を返す）
       const queries = targetObjectTypes.map((ot) =>
         executeQuery(connection, `SHOW ${ot.type} IN SCHEMA "${targetDatabase}"."${schemaName}"`).catch((e) => {
-          console.warn(`⚠️ Could not fetch ${ot.type} in ${schemaName}:`, e.message);
+          Logger.warn(`⚠️ Could not fetch ${ot.type} in ${schemaName}:`, e.message);
           return [];
         })
       );
@@ -252,13 +253,13 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
     return new SnowflakeDatabase(targetDatabase, sortSchemas(schemas), org, targetAccount || undefined);
   } catch (error: any) {
-    console.error("Snowflake fetch error:", error);
+    Logger.error("Snowflake fetch error:", error);
     throw new Error(`Failed to fetch Snowflake data: ${error.message || JSON.stringify(error)}`);
   } finally {
     // Ensure connection is closed
     if (connection.isUp()) {
       connection.destroy((err, conn) => {
-         if(err) console.error("Error closing Snowflake connection", err);
+         if(err) Logger.error("Error closing Snowflake connection", err);
       });
     }
   }
@@ -296,7 +297,7 @@ async function fetchSeedRolesByObjects(
     const rows = await executeQuery(connection, `SHOW GRANTS ON DATABASE "${targetDatabase}"`);
     collectGrantees(rows);
   } catch (e: any) {
-    console.warn(`[Roles] SHOW GRANTS ON DATABASE "${targetDatabase}" failed:`, e?.message || e);
+    Logger.warn(`[Roles] SHOW GRANTS ON DATABASE "${targetDatabase}" failed:`, e?.message || e);
   }
 
   // 2. Schema-level grants — discover schemas first
@@ -307,7 +308,7 @@ async function fetchSeedRolesByObjects(
       .map((r: any) => (r.name || r.NAME) as string)
       .filter((n) => n && n !== "INFORMATION_SCHEMA");
   } catch (e: any) {
-    console.warn(`[Roles] SHOW SCHEMAS IN DATABASE "${targetDatabase}" failed:`, e?.message || e);
+    Logger.warn(`[Roles] SHOW SCHEMAS IN DATABASE "${targetDatabase}" failed:`, e?.message || e);
   }
 
   await Promise.all(
@@ -319,7 +320,7 @@ async function fetchSeedRolesByObjects(
         );
         collectGrantees(rows);
       } catch (e: any) {
-        console.warn(`[Roles] SHOW GRANTS ON SCHEMA "${schemaName}" failed:`, e?.message || e);
+        Logger.warn(`[Roles] SHOW GRANTS ON SCHEMA "${schemaName}" failed:`, e?.message || e);
       }
     })
   );
@@ -331,7 +332,7 @@ async function fetchSeedRolesByObjects(
         const rows = await executeQuery(connection, `SHOW GRANTS ON WAREHOUSE "${wh}"`);
         collectGrantees(rows);
       } catch (e: any) {
-        console.warn(`[Roles] SHOW GRANTS ON WAREHOUSE "${wh}" failed:`, e?.message || e);
+        Logger.warn(`[Roles] SHOW GRANTS ON WAREHOUSE "${wh}" failed:`, e?.message || e);
       }
     })
   );
@@ -413,7 +414,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
 
   const connOptions = buildConnectionOptions({ database: targetDatabase });
   if (!connOptions) {
-    console.warn("⚠️ Snowflake credentials not configured. Using mock role data.");
+    Logger.warn("⚠️ Snowflake credentials not configured. Using mock role data.");
     return getMockRoleData();
   }
 
@@ -448,7 +449,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
     } else {
       // by-objects (default)
       if (!targetDatabase) {
-        console.warn(
+        Logger.warn(
           "[Roles] SNOWFLAKE_TARGET_DATABASE is not set. " +
           "by-objects mode requires it; falling back to system-only."
         );
@@ -464,7 +465,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
           : (process.env.SNOWFLAKE_WAREHOUSE ? [process.env.SNOWFLAKE_WAREHOUSE] : []);
 
         seed = await fetchSeedRolesByObjects(connection, targetDatabase, warehouses);
-        console.info(
+        Logger.info(
           `[Roles] by-objects seed size = ${seed.size} ` +
           `(db="${targetDatabase}", warehouses=${JSON.stringify(warehouses)})`
         );
@@ -475,7 +476,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
     // Bounded parallelism keeps this safe even when seed contains many roles.
     const parentMap = await expandToAncestors(connection, seed, 8);
 
-    console.info(
+    Logger.info(
       `[Roles] mode="${mode}" final role count = ${seed.size} ` +
       `(of ${allRoleNames.length} total in account)`
     );
@@ -488,12 +489,12 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
       account: targetAccount,
     } as unknown as SnowflakeRoleGraph;
   } catch (error: any) {
-    console.error("Snowflake role fetch error:", error);
+    Logger.error("Snowflake role fetch error:", error);
     throw new Error(`Failed to fetch Snowflake roles: ${error.message}`);
   } finally {
     if (connection.isUp()) {
       connection.destroy((err) => {
-        if (err) console.error("Error closing Snowflake connection", err);
+        if (err) Logger.error("Error closing Snowflake connection", err);
       });
     }
   }
@@ -527,12 +528,12 @@ export async function fetchSnowflakeDDL(objectType: string, databaseName: string
     }
     return "";
   } catch (error: any) {
-    console.error(`Snowflake GET_DDL fetch error for ${objectName}:`, error);
+    Logger.error(`Snowflake GET_DDL fetch error for ${objectName}:`, error);
     throw new Error(`Failed to fetch DDL: ${error.message}`);
   } finally {
     if (connection.isUp()) {
       connection.destroy((err) => {
-        if (err) console.error("Error closing Snowflake connection", err);
+        if (err) Logger.error("Error closing Snowflake connection", err);
       });
     }
   }

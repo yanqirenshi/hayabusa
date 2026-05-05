@@ -3,6 +3,7 @@
 import { ClientSecretCredential } from "@azure/identity";
 import { DataFactoryManagementClient } from "@azure/arm-datafactory";
 import { AdfActivity, AdfPipeline, AdfFactory } from "../data/AdfData";
+import { Logger } from "@/core/Logger";
 import { getMockAdfData } from "../data/mockData";
 
 export async function fetchAdfData(): Promise<AdfFactory> {
@@ -21,7 +22,7 @@ export async function fetchAdfData(): Promise<AdfFactory> {
     !resourceGroup ||
     !factoryName
   ) {
-    console.warn(
+    Logger.warn(
       "[ADF] Azure Data Factory credentials are not fully set. Using mock data.",
     );
     return getMockAdfData();
@@ -65,8 +66,8 @@ export async function fetchAdfData(): Promise<AdfFactory> {
 
     return new AdfFactory(factoryName, pipelines);
   } catch (error) {
-    console.error("[ADF] Failed to fetch Data Factory data:", error);
-    console.warn("[ADF] Falling back to mock data.");
+    Logger.error("[ADF] Failed to fetch Data Factory data:", error);
+    Logger.warn("[ADF] Falling back to mock data.");
     return getMockAdfData();
   }
 }

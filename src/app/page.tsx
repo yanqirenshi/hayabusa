@@ -7,6 +7,8 @@ import { fetchSnowflakeData, fetchSnowflakeRoles } from "@/features/snowflake/se
 import { fetchTerraformStructure } from "@/features/terraform/services/terraformScanner";
 import { fetchAzureBlobData } from "@/features/azure-blob/services/azureBlobFetcher";
 import { fetchAdfData } from "@/features/azure-datafactory/services/adfFetcher";
+import LogViewer from "@/components/LogViewer";
+import { Logger } from "@/core/Logger";
 
 export default async function Home() {
   // 1. Fetch Snowflake metadata from Server safely (Credentials hidden on server)
@@ -18,7 +20,7 @@ export default async function Home() {
     const dbDataClassInstance = await fetchSnowflakeData();
     dbData = JSON.parse(JSON.stringify(dbDataClassInstance));
   } catch (error) {
-    console.error("Snowflake DB fetch error:", error);
+    Logger.error("Snowflake DB fetch error:", error);
   }
 
   // 3. Fetch Terraform directory structure
@@ -29,7 +31,7 @@ export default async function Home() {
       terraformData = JSON.parse(JSON.stringify(rawTerraformData));
     }
   } catch (error) {
-    console.error("Terraform scan error:", error);
+    Logger.error("Terraform scan error:", error);
   }
 
   // 4. Fetch Snowflake role hierarchy
@@ -38,7 +40,7 @@ export default async function Home() {
     const rawRoleData = await fetchSnowflakeRoles();
     roleData = JSON.parse(JSON.stringify(rawRoleData));
   } catch (error) {
-    console.error("Snowflake role fetch error:", error);
+    Logger.error("Snowflake role fetch error:", error);
   }
 
   // 5. Fetch Azure Blob Storage metadata
@@ -47,7 +49,7 @@ export default async function Home() {
     const rawAzureBlobData = await fetchAzureBlobData();
     azureBlobData = JSON.parse(JSON.stringify(rawAzureBlobData));
   } catch (error) {
-    console.error("Azure Blob fetch error:", error);
+    Logger.error("Azure Blob fetch error:", error);
   }
 
   // 6. Fetch Azure Data Factory metadata
@@ -56,7 +58,7 @@ export default async function Home() {
     const rawAdfData = await fetchAdfData();
     adfData = JSON.parse(JSON.stringify(rawAdfData));
   } catch (error) {
-    console.error("Azure Data Factory fetch error:", error);
+    Logger.error("Azure Data Factory fetch error:", error);
   }
 
   return (
@@ -94,6 +96,7 @@ export default async function Home() {
              <AzureBlobClientRenderer dbData={azureBlobData} rootX={3000} rootY={0} />
            )}
         </MainCanvasRenderer>
+        <LogViewer />
       </main>
     </div>
   );

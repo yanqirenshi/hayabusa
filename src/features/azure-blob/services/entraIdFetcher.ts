@@ -2,6 +2,7 @@
 
 import { ClientSecretCredential } from "@azure/identity";
 import { AzureEntraUser, AzureEntraGroup, AzureEntraApp } from "../data/AzureBlobData";
+import { Logger } from "@/core/Logger";
 
 export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraUser[], groups: AzureEntraGroup[], apps: AzureEntraApp[], tenantName: string | null }> {
   const tenantId = process.env.AZURE_TENANT_ID;
@@ -10,7 +11,7 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
 
   if (!tenantId || !clientId || !clientSecret || tenantId === "your_tenant_id") {
     // Missing credentials, fallback to dummy
-    console.warn("[EntraID] Tenant/Client credentials are empty or invalid. Using mock user/group/app data.");
+    Logger.warn("[EntraID] Tenant/Client credentials are empty or invalid. Using mock user/group/app data.");
     return {
       users: [
         new AzureEntraUser("Alice Tanaka (Mock)", "alice.tanaka@example.mock"),
@@ -48,7 +49,7 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
     // permission gap doesn't tank the whole batch.
     const safeFetch = (url: string) =>
       fetch(url, { headers }).catch((e) => {
-        console.warn(`[EntraID] Network error fetching ${url}:`, e);
+        Logger.warn(`[EntraID] Network error fetching ${url}:`, e);
         return null as Response | null;
       });
 
@@ -66,10 +67,10 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
           tenantName = parsedOrg.value[0].displayName;
         }
       } catch (e) {
-        console.warn("[EntraID] Failed to parse organization response", e);
+        Logger.warn("[EntraID] Failed to parse organization response", e);
       }
     } else if (orgRes) {
-      console.warn(`[EntraID] Failed to fetch organization info: ${orgRes.status}`);
+      Logger.warn(`[EntraID] Failed to fetch organization info: ${orgRes.status}`);
     }
 
     if (!usersRes || !usersRes.ok || !groupsRes || !groupsRes.ok) {
@@ -86,7 +87,7 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
       parsedApps = await appsRes.json();
     } else if (appsRes) {
       const errText = await appsRes.text();
-      console.warn("[EntraID] Apps fetch returned error:", appsRes.status, errText);
+      Logger.warn("[EntraID] Apps fetch returned error:", appsRes.status, errText);
       parsedApps.value = [{ displayName: "Require App.Read.All", appId: "error-app" }];
     }
 
@@ -96,7 +97,7 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
 
     return { users, groups, apps, tenantName };
   } catch (error) {
-    console.error("[EntraID] Failed to fetch users/groups:", error);
+    Logger.error("[EntraID] Failed to fetch users/groups:", error);
     // Return error mock to make failures apparent but not crash
     return {
       users: [

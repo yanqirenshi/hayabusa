@@ -3,6 +3,7 @@
 import { BlobServiceClient } from "@azure/storage-blob";
 import { AzureBlob, AzureBlobContainer, AzureBlobStorage, AzureBlobDirectory, AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureTenant, AzureContainerRegistry, AzureBatch, AzureDevOps, AzureRepo, AzurePipeline } from "../data/AzureBlobData";
 import { getMockAzureBlobData } from "../data/mockData";
+import { Logger } from "@/core/Logger";
 import { fetchEntraIdUsersAndGroups } from "./entraIdFetcher";
 import { fetchAzureArmResources } from "./azureArmFetcher";
 import { fetchAzureDevOpsData } from "./azureDevOpsFetcher";
@@ -38,7 +39,7 @@ async function fetchBlobStorageAccount(
           // Individual blobs are intentionally skipped (stop at directory level).
         }
       } catch (e) {
-        console.warn(`[AzureBlob] Failed to list contents of container ${name}:`, e);
+        Logger.warn(`[AzureBlob] Failed to list contents of container ${name}:`, e);
       }
       return new AzureBlobContainer(name, directories, blobs);
     });
@@ -50,7 +51,7 @@ async function fetchBlobStorageAccount(
       "rg-storage" // Placeholder; RG isn't derivable from connection string.
     );
   } catch (e) {
-    console.error("[AzureBlob] Failed to fetch real blob data:", e);
+    Logger.error("[AzureBlob] Failed to fetch real blob data:", e);
     return null;
   }
 }
