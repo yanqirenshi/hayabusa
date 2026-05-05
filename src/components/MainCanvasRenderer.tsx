@@ -41,10 +41,9 @@ export default function MainCanvasRenderer({
       ref={containerRef}
       style={{
         width: "100%",
-        maxWidth: "100%",
-        height: "85vh",
-        margin: "0 auto",
-        border: "1px solid #ddd",
+        height: "100%",
+        margin: 0,
+        border: "none",
         backgroundColor: "#fcfcfc",
         overflow: "hidden", // Let D3 handle panning instead of scrollbars
         position: "relative"

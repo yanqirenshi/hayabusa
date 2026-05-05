@@ -62,15 +62,8 @@ export default async function Home() {
   }
 
   return (
-    <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
-      <h1 style={{ fontWeight: 600, fontSize: "2rem", marginBottom: "0.5rem" }}>
-        Hayabusa System Architecture (Unified Canvas)
-      </h1>
-      <p style={{ marginBottom: "2rem", color: "#666" }}>
-        Data Pipeline, Data Model, and Infrastructure Visualization
-      </p>
-
-      <main>
+    <div style={{ padding: 0, margin: 0, height: "100vh", overflow: "hidden", fontFamily: "sans-serif" }}>
+      <main style={{ height: "100%", width: "100%" }}>
         {/*
           Global Canvas.
           Currently hosts Snowflake and Terraform structures side-by-side.
