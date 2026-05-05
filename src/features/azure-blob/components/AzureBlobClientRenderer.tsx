@@ -7,7 +7,17 @@ import { AzureBlobDrawing } from "../drawing/AzureBlobDrawing";
 import AzureBlobGroup from "./AzureBlobGroup";
 import { IDrawingNode } from "@/core/interfaces";
 
-export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }: { dbData: AzureTenant, rootX?: number, rootY?: number }) {
+export default function AzureBlobClientRenderer({ 
+  dbData, 
+  azureError, 
+  rootX = 0, 
+  rootY = 0 
+}: { 
+  dbData: AzureTenant | null, 
+  azureError?: string | null,
+  rootX?: number, 
+  rootY?: number 
+}) {
   const [nodes, setNodes] = useState<IDrawingNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<IDrawingNode | null>(null);
 
@@ -31,6 +41,11 @@ export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }
   };
 
   useEffect(() => {
+    if (!dbData) {
+      setNodes([]);
+      return;
+    }
+
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (context) {
@@ -48,7 +63,9 @@ export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }
     setNodes(drawing.nodes);
   }, [dbData]);
 
-  if (nodes.length === 0) return null;
+  const isErrorState = !dbData && !!azureError;
+
+  if (nodes.length === 0 && !isErrorState) return null;
 
   const renderInspector = () => {
     if (!selectedNode || typeof document === 'undefined') return null;
@@ -152,7 +169,20 @@ export default function AzureBlobClientRenderer({ dbData, rootX = 0, rootY = 0 }
   return (
     <>
       <g transform={`translate(${rootX}, ${rootY})`}>
-        <AzureBlobGroup nodes={nodes} onNodeClick={handleNodeSelect} />
+        {isErrorState ? (
+          <g transform={`translate(20, 50)`}>
+            <rect x={0} y={0} width={500} height={100} fill="#fef2f2" stroke="#f87171" strokeWidth={1} rx={4} />
+            <text x={20} y={30} fill="#dc2626" fontSize="14px" fontWeight="bold">Azure 認証エラーが発生しました</text>
+            <text x={20} y={55} fill="#7f1d1d" fontSize="12px" width={460}>
+              {azureError && azureError.length > 60 ? azureError.substring(0, 60) + '...' : azureError}
+            </text>
+            <text x={20} y={75} fill="#7f1d1d" fontSize="12px">
+              詳細は右下のログをご確認ください。
+            </text>
+          </g>
+        ) : (
+          <AzureBlobGroup nodes={nodes} onNodeClick={handleNodeSelect} />
+        )}
       </g>
       {renderInspector()}
     </>

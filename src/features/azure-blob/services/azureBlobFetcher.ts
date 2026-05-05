@@ -81,11 +81,9 @@ export async function fetchAzureBlobData(): Promise<AzureTenant> {
   let subscriptions = armSubscriptions;
   const storageAccount = storageAccountResult;
 
-  // 5. Fallback or Merge Merge Blob into ARM structure
   if (subscriptions.length === 0) {
-    // Fallback to mock if nothing from ARM (only if we don't have enough real data)
     if (isMockMode && devOps.length === 0 && users.length === 0) {
-      return getMockAzureBlobData();
+      throw new Error("Azure credentials not fully configured in .env.local.");
     }
     
     // If we have some real data but no ARM, create a dummy structure for the storage account

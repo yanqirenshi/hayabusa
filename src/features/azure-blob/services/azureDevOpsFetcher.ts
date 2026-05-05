@@ -8,8 +8,8 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
   const token = process.env.AZURE_DEVOPS_PAT;
 
   if (!orgUrl || !token || orgUrl === "https://dev.azure.com/your-org") {
-    Logger.warn("[DevOps] Org URL or PAT not set. Skipping real DevOps data.");
-    return [];
+    Logger.error("[DevOps] Org URL or PAT not set.");
+    throw new Error("Azure DevOps organization URL or PAT is not configured in .env.local.");
   }
 
   const concurrency = Math.max(
@@ -75,8 +75,8 @@ export async function fetchAzureDevOpsData(): Promise<AzureDevOps[]> {
       return [new AzureDevOps(orgName, allRepos, allPipelines)];
     }
     return [];
-  } catch (error) {
+  } catch (error: any) {
     Logger.error("[DevOps] Failed to fetch data:", error);
-    return [];
+    throw new Error(`Failed to fetch Azure DevOps data: ${error.message || JSON.stringify(error)}`);
   }
 }

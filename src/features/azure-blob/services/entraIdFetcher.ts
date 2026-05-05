@@ -10,23 +10,8 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
   const clientSecret = process.env.AZURE_CLIENT_SECRET;
 
   if (!tenantId || !clientId || !clientSecret || tenantId === "your_tenant_id") {
-    // Missing credentials, fallback to dummy
-    Logger.warn("[EntraID] Tenant/Client credentials are empty or invalid. Using mock user/group/app data.");
-    return {
-      users: [
-        new AzureEntraUser("Alice Tanaka (Mock)", "alice.tanaka@example.mock"),
-        new AzureEntraUser("Bob Suzuki (Mock)", "bob.suzuki@example.mock"),
-        new AzureEntraUser("Charlie Sato (Mock)", "charlie.sato@example.mock"),
-      ],
-      groups: [
-        new AzureEntraGroup("Global Administrators (Mock)", "group-mock-01"),
-        new AzureEntraGroup("Data Engineers (Mock)", "group-mock-02"),
-      ],
-      apps: [
-        new AzureEntraApp("Hayabusa Auth App (Mock)", "app-mock-01"),
-      ],
-      tenantName: null
-    };
+    Logger.error("[EntraID] Tenant/Client credentials are empty or invalid.");
+    throw new Error("Azure Entra ID credentials (Tenant ID, Client ID, Secret) are not fully configured in .env.local.");
   }
 
   let tenantName: string | null = null;
@@ -96,21 +81,9 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
     const apps: AzureEntraApp[] = (parsedApps.value || []).map((a: any) => new AzureEntraApp(a.displayName || "Unknown App", a.appId || ""));
 
     return { users, groups, apps, tenantName };
-  } catch (error) {
+  } catch (error: any) {
     Logger.error("[EntraID] Failed to fetch users/groups:", error);
-    // Return error mock to make failures apparent but not crash
-    return {
-      users: [
-        new AzureEntraUser("Auth failed / Check Settings", "error_code@example.com"),
-      ],
-      groups: [
-        new AzureEntraGroup("Auth failed / Check Settings", "error-group-id"),
-      ],
-      apps: [
-        new AzureEntraApp("Auth failed / Check Settings", "error-app-id"),
-      ],
-      tenantName: null
-    };
+    throw new Error(`Failed to fetch Entra ID data: ${error.message || JSON.stringify(error)}`);
   }
 }
 

@@ -66,6 +66,7 @@ export default async function Home() {
 
   // 5. Fetch Azure Blob Storage metadata
   let azureBlobData = null;
+  let azureError: string | null = null;
   try {
     start = Date.now();
     Logger.info("[Azure] クラウドリソース・メタデータの取得を開始します...");
@@ -74,12 +75,14 @@ export default async function Home() {
     const userCount = azureBlobData?.users?.length || 0;
     const devOpsCount = azureBlobData?.devOps?.length || 0;
     Logger.info(`[Azure] クラウドリソース・メタデータの取得を完了しました（Entraユーザー: ${userCount}件, DevOps組織: ${devOpsCount}件, 処理時間: ${Date.now() - start}ms）`);
-  } catch (error) {
+  } catch (error: any) {
+    azureError = error.message || "Azure クラウドリソースのメタデータ取得に失敗しました";
     Logger.error("[Azure] クラウドリソース・メタデータの取得に失敗しました:", error);
   }
 
   // 6. Fetch Azure Data Factory metadata
   let adfData = null;
+  let adfError: string | null = null;
   try {
     start = Date.now();
     Logger.info("[ADF] Data Factory メタデータの取得を開始します...");
@@ -87,7 +90,8 @@ export default async function Home() {
     adfData = JSON.parse(JSON.stringify(rawAdfData));
     const pipelineCount = adfData?.pipelines?.length || 0;
     Logger.info(`[ADF] Data Factory メタデータの取得を完了しました（パイプライン: ${pipelineCount}件, 処理時間: ${Date.now() - start}ms）`);
-  } catch (error) {
+  } catch (error: any) {
+    adfError = error.message || "Azure Data Factory のメタデータ取得に失敗しました";
     Logger.error("[ADF] Data Factory メタデータの取得に失敗しました:", error);
   }
 
@@ -119,8 +123,8 @@ export default async function Home() {
            )}
 
            {/* Azure Blob: further right column (x=3000) */}
-           {azureBlobData && (
-             <AzureBlobClientRenderer dbData={azureBlobData} rootX={3000} rootY={0} />
+           {(azureBlobData || azureError) && (
+             <AzureBlobClientRenderer dbData={azureBlobData} azureError={azureError} rootX={3000} rootY={0} />
            )}
         </MainCanvasRenderer>
         <LogViewer />

@@ -22,10 +22,8 @@ export async function fetchAdfData(): Promise<AdfFactory> {
     !resourceGroup ||
     !factoryName
   ) {
-    Logger.warn(
-      "[ADF] Azure Data Factory credentials are not fully set. Using mock data.",
-    );
-    return getMockAdfData();
+    Logger.error("[ADF] Azure Data Factory credentials are not fully set.");
+    throw new Error("Azure Data Factory credentials are not fully configured in .env.local.");
   }
 
   try {
@@ -65,9 +63,8 @@ export async function fetchAdfData(): Promise<AdfFactory> {
     }
 
     return new AdfFactory(factoryName, pipelines);
-  } catch (error) {
+  } catch (error: any) {
     Logger.error("[ADF] Failed to fetch Data Factory data:", error);
-    Logger.warn("[ADF] Falling back to mock data.");
-    return getMockAdfData();
+    throw new Error(`Failed to fetch Azure Data Factory data: ${error.message || JSON.stringify(error)}`);
   }
 }
