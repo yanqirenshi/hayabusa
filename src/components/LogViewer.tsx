@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getLogsAction, clearLogsAction } from "@/app/actions/logActions";
+import { getLogsAction, clearLogsAction, addClientLogAction } from "@/app/actions/logActions";
 import { LogEntry, LogLevel } from "@/core/Logger";
 
 export default function LogViewer() {
@@ -46,7 +46,12 @@ export default function LogViewer() {
 
   const handleClear = async () => {
     await clearLogsAction();
-    setLogs([]);
+    await fetchLogs();
+  };
+
+  const handleRefresh = async () => {
+    await addClientLogAction("INFO", "[ユーザー操作] ログが手動更新されました。");
+    await fetchLogs();
   };
 
   const filteredLogs = logs.filter((log) => {
@@ -187,7 +192,7 @@ export default function LogViewer() {
               Auto Refresh (3s)
             </label>
             <div>
-              <button onClick={fetchLogs} style={{ marginRight: "10px", background: "none", border: "1px solid #d1d5db", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Refresh</button>
+              <button onClick={handleRefresh} style={{ marginRight: "10px", background: "none", border: "1px solid #d1d5db", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Refresh</button>
               <button onClick={handleClear} style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Clear All</button>
             </div>
           </div>

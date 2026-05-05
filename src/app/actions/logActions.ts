@@ -9,4 +9,11 @@ export async function getLogsAction(): Promise<LogEntry[]> {
 
 export async function clearLogsAction(): Promise<void> {
   Logger.clearLogs();
+  Logger.info("[ユーザー操作] システムログが手動でクリアされました。");
+}
+
+export async function addClientLogAction(level: "INFO" | "WARN" | "ERROR", message: string): Promise<void> {
+  if (level === "INFO") Logger.info(message);
+  else if (level === "WARN") Logger.warn(message);
+  else if (level === "ERROR") Logger.error(message);
 }
