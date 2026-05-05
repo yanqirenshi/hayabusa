@@ -30,7 +30,7 @@ export default async function Home() {
     Logger.info(`[Snowflake] データベース・メタデータの取得を完了しました（スキーマ: ${count}件, 処理時間: ${Date.now() - start}ms）`);
   } catch (error: any) {
     dbError = error.message || "Snowflake データベースのメタデータ取得に失敗しました";
-    Logger.error("[Snowflake] データベース・メタデータの取得に失敗しました:", error);
+    Logger.warn("[Snowflake] データベース・メタデータの取得に失敗しました:", error);
   }
 
   // 3. Fetch Terraform directory structure
@@ -46,7 +46,7 @@ export default async function Home() {
     const fileCount = terraformData?.parsedFiles?.length || 0;
     Logger.info(`[Terraform] ディレクトリ構成の走査を完了しました（直下のディレクトリ: ${dirCount}件, 直下ファイル: ${fileCount}件, 処理時間: ${Date.now() - start}ms）`);
   } catch (error) {
-    Logger.error("[Terraform] ディレクトリ構成の走査に失敗しました:", error);
+    Logger.warn("[Terraform] ディレクトリ構成の走査に失敗しました:", error);
   }
 
   // 4. Fetch Snowflake role hierarchy
@@ -61,7 +61,7 @@ export default async function Home() {
     Logger.info(`[Snowflake] ロール階層データの取得を完了しました（ロール: ${roleCount}件, 処理時間: ${Date.now() - start}ms）`);
   } catch (error: any) {
     roleError = error.message || "Snowflake ロール階層の取得に失敗しました";
-    Logger.error("[Snowflake] ロール階層データの取得に失敗しました:", error);
+    Logger.warn("[Snowflake] ロール階層データの取得に失敗しました:", error);
   }
 
   // 5. Fetch Azure Blob Storage metadata
@@ -77,7 +77,7 @@ export default async function Home() {
     Logger.info(`[Azure] クラウドリソース・メタデータの取得を完了しました（Entraユーザー: ${userCount}件, DevOps組織: ${devOpsCount}件, 処理時間: ${Date.now() - start}ms）`);
   } catch (error: any) {
     azureError = error.message || "Azure クラウドリソースのメタデータ取得に失敗しました";
-    Logger.error("[Azure] クラウドリソース・メタデータの取得に失敗しました:", error);
+    Logger.warn("[Azure] クラウドリソース・メタデータの取得に失敗しました:", error);
   }
 
   // 6. Fetch Azure Data Factory metadata
@@ -92,7 +92,7 @@ export default async function Home() {
     Logger.info(`[ADF] Data Factory メタデータの取得を完了しました（パイプライン: ${pipelineCount}件, 処理時間: ${Date.now() - start}ms）`);
   } catch (error: any) {
     adfError = error.message || "Azure Data Factory のメタデータ取得に失敗しました";
-    Logger.error("[ADF] Data Factory メタデータの取得に失敗しました:", error);
+    Logger.warn("[ADF] Data Factory メタデータの取得に失敗しました:", error);
   }
 
   Logger.info(`システム全体のデータ取得がすべて完了しました（総処理時間: ${Date.now() - globalStartTime}ms）`);

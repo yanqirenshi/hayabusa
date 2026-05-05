@@ -22,7 +22,7 @@ export async function fetchAdfData(): Promise<AdfFactory> {
     !resourceGroup ||
     !factoryName
   ) {
-    Logger.error("[ADF] Azure Data Factory credentials are not fully set.");
+    Logger.warn("[ADF] Azure Data Factory credentials are not fully set.");
     throw new Error("Azure Data Factory credentials are not fully configured in .env.local.");
   }
 

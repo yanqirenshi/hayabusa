@@ -50,7 +50,7 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
   if (authenticator === "SNOWFLAKE_JWT") {
     const keyPath = process.env.SNOWFLAKE_PRIVATE_KEY_PATH;
     if (!keyPath) {
-      Logger.error(
+      Logger.warn(
         "[Snowflake] SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT requires SNOWFLAKE_PRIVATE_KEY_PATH."
       );
       throw new Error("SNOWFLAKE_PRIVATE_KEY_PATH is missing in .env.local");
@@ -170,7 +170,7 @@ export async function fetchSnowflakeData(): Promise<SnowflakeDatabase> {
 
   const connOptions = buildConnectionOptions({ database: targetDatabase });
   if (!connOptions || !targetDatabase) {
-    Logger.error("⚠️ Snowflake credentials not fully configured in .env.local.");
+    Logger.warn("⚠️ Snowflake credentials not fully configured in .env.local.");
     throw new Error("Snowflake credentials not fully configured in .env.local.");
   }
 
@@ -412,7 +412,7 @@ export async function fetchSnowflakeRoles(): Promise<SnowflakeRoleGraph> {
 
   const connOptions = buildConnectionOptions();
   if (!connOptions) {
-    Logger.error("⚠️ Snowflake credentials not configured.");
+    Logger.warn("⚠️ Snowflake credentials not configured.");
     throw new Error("Snowflake credentials not configured in .env.local.");
   }
 
