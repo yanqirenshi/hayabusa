@@ -14,7 +14,7 @@ const CONFIG = {
   bandLabelWidth: 90,
   bandLabelGap: 16,
   nodeMinWidth: 150,
-  nodeHeight: 34,
+  nodeHeight: 50,
   nodeHGap: 24,          // horizontal gap between sibling nodes / subtrees
   nodePaddingV: 22,      // vertical padding inside band (top & bottom)
   sysRowGap: 45,         // gap between tree rows within system tier
@@ -41,7 +41,7 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
     const tw = this.measureTextWidth
       ? this.measureTextWidth(text)
       : text.length * CONFIG.fallbackCharWidth;
-    return Math.max(CONFIG.nodeMinWidth, tw + 40);
+    return Math.max(CONFIG.nodeMinWidth, tw + 60);
   }
 
   private computeLayout() {

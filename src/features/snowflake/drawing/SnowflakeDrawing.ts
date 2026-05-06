@@ -3,14 +3,14 @@ import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObje
 
 // Define layout constants
 const CONFIG = {
-  dbPadding: { top: 50, right: 30, bottom: 30, left: 30 },
-  schemaPadding: { top: 40, right: 20, bottom: 20, left: 20 },
-  groupPadding: { top: 35, right: 15, bottom: 15, left: 15 },
-  schemaGap: 30,
+  dbPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  schemaPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  groupPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  schemaGap: 20,
   groupGap: 20,
   itemGap: 10,
-  itemWidth: 220,
-  itemHeight: 35,
+  itemWidth: 260,
+  itemHeight: 50,
 };
 
 export class SnowflakeDrawing implements IDrawingClass {

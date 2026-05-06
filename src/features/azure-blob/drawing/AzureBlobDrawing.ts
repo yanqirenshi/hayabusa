@@ -1,17 +1,18 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
+import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureDevOpsOrganizationNode, AzureManagementGroupNode, AzureSubscriptionNode, AzureResourceGroupNode, AzureBlobItemNode, AzureContainerRegistryNode, AzureBatchNode, AzureDataFactoryNode, AzureBlobContainerNode, AzureStorageAccountNode, AzureEntraRoot, AzureEntraContainer, AzureArmRoot, AzureDevOpsRoot } from "./AzureNodes";
 
 const CONFIG = {
-  tenantPadding: { top: 50, right: 50, bottom: 50, left: 50 },
-  mgPadding: { top: 45, right: 40, bottom: 40, left: 40 },
-  subPadding: { top: 45, right: 40, bottom: 40, left: 40 },
-  rgPadding: { top: 45, right: 40, bottom: 40, left: 40 },
-  accountPadding: { top: 45, right: 30, bottom: 30, left: 30 },
-  containerPadding: { top: 52, right: 20, bottom: 20, left: 20 },
-  gap: 40,
+  tenantPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  mgPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  subPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  rgPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  accountPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  containerPadding: { top: 60, right: 20, bottom: 20, left: 20 },
+  gap: 20,
   itemGap: 10,
-  itemWidth: 220,
-  itemHeight: 35,
+  itemWidth: 260,
+  itemHeight: 50,
 };
 
 export class AzureBlobDrawing implements IDrawingClass {
@@ -40,21 +41,21 @@ export class AzureBlobDrawing implements IDrawingClass {
 
     // 1. Users Column
     if (tenant.users && tenant.users.length > 0) {
-      let relativeY = 40;
+      let relativeY = 60;
       let maxWidth = 280;
       const userColNodes: IDrawingNode[] = [];
 
       for (const u of tenant.users) {
-        userColNodes.push({
-          id: `azure-user-${u.userPrincipalName}`,
-          x: 15,
-          y: relativeY,
-          width: maxWidth - 30,
-          height: CONFIG.itemHeight,
-          label: u.displayName,
-          type: "azure-entra-user",
-          data: u
-        });
+        userColNodes.push(new AzureEntraUser({
+                  id: `azure-user-${u.userPrincipalName}`,
+                  x: 20,
+                  y: relativeY,
+                  width: maxWidth - 40,
+                  height: CONFIG.itemHeight,
+                  label: u.displayName,
+                  type: "azure-entra-user",
+                  data: u
+                }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -63,7 +64,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push({
+      childNodes.push(new AzureEntraContainer({
         id: `azure-users-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -73,28 +74,28 @@ export class AzureBlobDrawing implements IDrawingClass {
         type: "azure-entra-users-container",
         children: userColNodes,
         data: null
-      });
+      }));
 
       currentX += maxWidth + CONFIG.gap;
     }
 
     // 2. Groups Column
     if (tenant.groups && tenant.groups.length > 0) {
-      let relativeY = 40;
+      let relativeY = 60;
       let maxWidth = 280;
       const groupColNodes: IDrawingNode[] = [];
 
       for (const g of tenant.groups) {
-        groupColNodes.push({
-          id: `azure-group-${g.id}`,
-          x: 15,
-          y: relativeY,
-          width: maxWidth - 30,
-          height: CONFIG.itemHeight,
-          label: g.displayName,
-          type: "azure-entra-group",
-          data: g
-        });
+        groupColNodes.push(new AzureEntraGroup({
+                  id: `azure-group-${g.id}`,
+                  x: 20,
+                  y: relativeY,
+                  width: maxWidth - 40,
+                  height: CONFIG.itemHeight,
+                  label: g.displayName,
+                  type: "azure-entra-group",
+                  data: g
+                }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -103,7 +104,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push({
+      childNodes.push(new AzureEntraContainer({
         id: `azure-groups-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -113,28 +114,28 @@ export class AzureBlobDrawing implements IDrawingClass {
         type: "azure-entra-groups-container",
         children: groupColNodes,
         data: null
-      });
+      }));
 
       currentX += maxWidth + CONFIG.gap;
     }
 
     // 3. Apps Column
     if (tenant.apps && tenant.apps.length > 0) {
-      let relativeY = 40;
+      let relativeY = 60;
       let maxWidth = 280;
       const appColNodes: IDrawingNode[] = [];
 
       for (const a of tenant.apps) {
-        appColNodes.push({
-          id: `azure-app-${a.appId}`,
-          x: 15,
-          y: relativeY,
-          width: maxWidth - 30,
-          height: CONFIG.itemHeight,
-          label: a.displayName,
-          type: "azure-entra-app",
-          data: a
-        });
+        appColNodes.push(new AzureEntraApp({
+                  id: `azure-app-${a.appId}`,
+                  x: 20,
+                  y: relativeY,
+                  width: maxWidth - 40,
+                  height: CONFIG.itemHeight,
+                  label: a.displayName,
+                  type: "azure-entra-app",
+                  data: a
+                }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -143,7 +144,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push({
+      childNodes.push(new AzureEntraContainer({
         id: `azure-apps-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -153,43 +154,43 @@ export class AzureBlobDrawing implements IDrawingClass {
         type: "azure-entra-apps-container",
         children: appColNodes,
         data: null
-      });
+      }));
 
       currentX += maxWidth + CONFIG.gap;
     }
 
     // 4. DevOps Column
     if (tenant.devOps && tenant.devOps.length > 0) {
-      let relativeY = 40;
+      let relativeY = 60;
       let maxWidth = 280;
       const devOpsNodes: IDrawingNode[] = [];
 
       for (const d of tenant.devOps) {
         // Simple list of Repos and Pipelines
         for (const r of d.repos) {
-          devOpsNodes.push({
-            id: `azure-devops-repo-${r.id}`,
-            x: 15,
-            y: relativeY,
-            width: maxWidth - 30,
-            height: CONFIG.itemHeight,
-            label: r.name,
-            type: "azure-devops-repo",
-            data: r
-          });
+          devOpsNodes.push(new AzureDevOpsRepoNode({
+                      id: `azure-devops-repo-${r.id}`,
+                      x: 20,
+                      y: relativeY,
+                      width: maxWidth - 40,
+                      height: CONFIG.itemHeight,
+                      label: r.name,
+                      type: "azure-devops-repo",
+                      data: r
+                    }));
           relativeY += CONFIG.itemHeight + CONFIG.itemGap;
         }
         for (const p of d.pipelines) {
-          devOpsNodes.push({
-            id: `azure-devops-pipe-${p.id}`,
-            x: 15,
-            y: relativeY,
-            width: maxWidth - 30,
-            height: CONFIG.itemHeight,
-            label: p.name,
-            type: "azure-devops-pipeline",
-            data: p
-          });
+          devOpsNodes.push(new AzureDevOpsPipelineNode({
+                      id: `azure-devops-pipe-${p.id}`,
+                      x: 20,
+                      y: relativeY,
+                      width: maxWidth - 40,
+                      height: CONFIG.itemHeight,
+                      label: p.name,
+                      type: "azure-devops-pipeline",
+                      data: p
+                    }));
           relativeY += CONFIG.itemHeight + CONFIG.itemGap;
         }
       }
@@ -199,17 +200,17 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push({
-        id: `azure-devops-col`,
-        x: currentX,
-        y: CONFIG.tenantPadding.top,
-        width: maxWidth,
-        height: colHeight,
-        label: "Azure DevOps",
-        type: "azure-devops-container",
-        children: devOpsNodes,
-        data: null
-      });
+      childNodes.push(new AzureDevOpsOrganizationNode({
+              id: `azure-devops-col`,
+              x: currentX,
+              y: CONFIG.tenantPadding.top,
+              width: maxWidth,
+              height: colHeight,
+              label: "Azure DevOps",
+              type: "azure-devops-container",
+              children: devOpsNodes,
+              data: null
+            }));
 
       currentX += maxWidth + CONFIG.gap;
     }
@@ -266,17 +267,17 @@ export class AzureBlobDrawing implements IDrawingClass {
     const mgWidth = Math.max(400, CONFIG.mgPadding.left + maxWidth + CONFIG.mgPadding.right);
     const mgHeight = Math.max(200, currentY > CONFIG.mgPadding.top ? currentY - CONFIG.gap + CONFIG.mgPadding.bottom : CONFIG.mgPadding.top + CONFIG.mgPadding.bottom);
 
-    return {
-      id: `azure-mg-${mg.name}`,
-      x: startX,
-      y: startY,
-      width: mgWidth,
-      height: mgHeight,
-      label: mg.name,
-      type: "azure-management-group",
-      children: childNodes,
-      data: mg
-    };
+    return new AzureManagementGroupNode({
+          id: `azure-mg-${mg.name}`,
+          x: startX,
+          y: startY,
+          width: mgWidth,
+          height: mgHeight,
+          label: mg.name,
+          type: "azure-management-group",
+          children: childNodes,
+          data: mg
+        });
   }
 
   private layoutSubscription(sub: AzureSubscription, startX: number, startY: number): IDrawingNode {
@@ -294,17 +295,17 @@ export class AzureBlobDrawing implements IDrawingClass {
     const subWidth = Math.max(350, CONFIG.subPadding.left + maxWidth + CONFIG.subPadding.right);
     const subHeight = Math.max(150, currentY > CONFIG.subPadding.top ? currentY - CONFIG.gap + CONFIG.subPadding.bottom : CONFIG.subPadding.top + CONFIG.subPadding.bottom);
 
-    return {
-      id: `azure-sub-${sub.name}`,
-      x: startX,
-      y: startY,
-      width: subWidth,
-      height: subHeight,
-      label: sub.name,
-      type: "azure-subscription",
-      children: childNodes,
-      data: sub
-    };
+    return new AzureSubscriptionNode({
+          id: `azure-sub-${sub.name}`,
+          x: startX,
+          y: startY,
+          width: subWidth,
+          height: subHeight,
+          label: sub.name,
+          type: "azure-subscription",
+          children: childNodes,
+          data: sub
+        });
   }
 
   private layoutResourceGroup(rg: AzureResourceGroup, startX: number, startY: number): IDrawingNode {
@@ -335,17 +336,17 @@ export class AzureBlobDrawing implements IDrawingClass {
     const rgWidth = Math.max(300, CONFIG.rgPadding.left + maxWidth + CONFIG.rgPadding.right);
     const rgHeight = Math.max(100, currentY > CONFIG.rgPadding.top ? currentY - CONFIG.gap + CONFIG.rgPadding.bottom : CONFIG.rgPadding.top + CONFIG.rgPadding.bottom);
 
-    return {
-      id: `azure-rg-${rg.name}`,
-      x: startX,
-      y: startY,
-      width: rgWidth,
-      height: rgHeight,
-      label: rg.name,
-      type: "azure-resource-group",
-      children: childNodes,
-      data: rg
-    };
+    return new AzureResourceGroupNode({
+          id: `azure-rg-${rg.name}`,
+          x: startX,
+          y: startY,
+          width: rgWidth,
+          height: rgHeight,
+          label: rg.name,
+          type: "azure-resource-group",
+          children: childNodes,
+          data: rg
+        });
   }
 
   private layoutACR(acr: AzureContainerRegistry, startX: number, startY: number): IDrawingNode {
@@ -354,46 +355,46 @@ export class AzureBlobDrawing implements IDrawingClass {
     const maxItemWidth = CONFIG.itemWidth;
 
     for (const repo of acr.repositories) {
-      childNodes.push({
-        id: `azure-acr-${acr.name}-repo-${repo}`,
-        x: CONFIG.containerPadding.left,
-        y: currentItemY,
-        width: maxItemWidth,
-        height: CONFIG.itemHeight,
-        label: repo,
-        type: "azure-container-repository",
-        data: repo
-      });
+      childNodes.push(new AzureBlobItemNode({
+              id: `azure-acr-${acr.name}-repo-${repo}`,
+              x: CONFIG.containerPadding.left,
+              y: currentItemY,
+              width: maxItemWidth,
+              height: CONFIG.itemHeight,
+              label: repo,
+              type: "azure-container-repository",
+              data: repo
+            }));
       currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
     }
 
     const acrWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
     const acrHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
 
-    return {
-      id: `azure-acr-${acr.name}`,
-      x: startX,
-      y: startY,
-      width: acrWidth,
-      height: acrHeight,
-      label: acr.name,
-      type: "azure-acr",
-      children: childNodes,
-      data: acr
-    };
+    return new AzureContainerRegistryNode({
+          id: `azure-acr-${acr.name}`,
+          x: startX,
+          y: startY,
+          width: acrWidth,
+          height: acrHeight,
+          label: acr.name,
+          type: "azure-acr",
+          children: childNodes,
+          data: acr
+        });
   }
 
   private layoutBatch(batch: AzureBatch, startX: number, startY: number): IDrawingNode {
-    return {
-      id: `azure-batch-${batch.name}`,
-      x: startX,
-      y: startY,
-      width: 280,
-      height: 60,
-      label: batch.name,
-      type: "azure-batch",
-      data: batch
-    };
+    return new AzureBatchNode({
+          id: `azure-batch-${batch.name}`,
+          x: startX,
+          y: startY,
+          width: 280,
+          height: 60,
+          label: batch.name,
+          type: "azure-batch",
+          data: batch
+        });
   }
 
   private layoutADF(adf: AzureDataFactory, startX: number, startY: number): IDrawingNode {
@@ -402,33 +403,33 @@ export class AzureBlobDrawing implements IDrawingClass {
     const maxItemWidth = CONFIG.itemWidth;
 
     for (const pipeline of adf.pipelines) {
-      childNodes.push({
-        id: `azure-adf-${adf.name}-pipeline-${pipeline.name}`,
-        x: CONFIG.containerPadding.left,
-        y: currentItemY,
-        width: maxItemWidth,
-        height: CONFIG.itemHeight,
-        label: pipeline.name,
-        type: "azure-adf-pipeline",
-        data: pipeline
-      });
+      childNodes.push(new AzureDevOpsPipelineNode({
+              id: `azure-adf-${adf.name}-pipeline-${pipeline.name}`,
+              x: CONFIG.containerPadding.left,
+              y: currentItemY,
+              width: maxItemWidth,
+              height: CONFIG.itemHeight,
+              label: pipeline.name,
+              type: "azure-adf-pipeline",
+              data: pipeline
+            }));
       currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
     }
 
     const adfWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
     const adfHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
 
-    return {
-      id: `azure-adf-${adf.name}`,
-      x: startX,
-      y: startY,
-      width: adfWidth,
-      height: adfHeight,
-      label: adf.name,
-      type: "azure-adf",
-      children: childNodes,
-      data: adf
-    };
+    return new AzureDataFactoryNode({
+          id: `azure-adf-${adf.name}`,
+          x: startX,
+          y: startY,
+          width: adfWidth,
+          height: adfHeight,
+          label: adf.name,
+          type: "azure-adf",
+          children: childNodes,
+          data: adf
+        });
   }
 
   private layoutStorageAccount(storage: AzureBlobStorage, startX: number, startY: number): IDrawingNode {
@@ -454,47 +455,47 @@ export class AzureBlobDrawing implements IDrawingClass {
       }
 
       for (const dir of container.directories) {
-        childNodes.push({
-          id: `${storage.accountName}-${container.name}-dir-${dir.name}`,
-          x: CONFIG.containerPadding.left,
-          y: currentItemY,
-          width: maxItemWidth,
-          height: CONFIG.itemHeight,
-          label: dir.name,
-          type: "azure-blob-directory",
-          data: dir
-        });
+        childNodes.push(new AzureBlobItemNode({
+                  id: `${storage.accountName}-${container.name}-dir-${dir.name}`,
+                  x: CONFIG.containerPadding.left,
+                  y: currentItemY,
+                  width: maxItemWidth,
+                  height: CONFIG.itemHeight,
+                  label: dir.name,
+                  type: "azure-blob-directory",
+                  data: dir
+                }));
         currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
       for (const blob of container.blobs) {
-        childNodes.push({
-          id: `${storage.accountName}-${container.name}-blob-${blob.name}`,
-          x: CONFIG.containerPadding.left,
-          y: currentItemY,
-          width: maxItemWidth,
-          height: CONFIG.itemHeight,
-          label: blob.name,
-          type: "azure-blob-item",
-          data: blob
-        });
+        childNodes.push(new AzureBlobItemNode({
+                  id: `${storage.accountName}-${container.name}-blob-${blob.name}`,
+                  x: CONFIG.containerPadding.left,
+                  y: currentItemY,
+                  width: maxItemWidth,
+                  height: CONFIG.itemHeight,
+                  label: blob.name,
+                  type: "azure-blob-item",
+                  data: blob
+                }));
         currentItemY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
       const computedContainerWidth = CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right;
       const computedContainerHeight = Math.max(200, currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom);
       
-      containerNodes.push({
-        id: `azure-blob-container-${storage.accountName}-${container.name}`,
-        x: currentContainerX,
-        y: CONFIG.accountPadding.top,
-        width: computedContainerWidth,
-        height: computedContainerHeight,
-        label: container.name,
-        type: "azure-blob-container",
-        children: childNodes,
-        data: container,
-      });
+      containerNodes.push(new AzureBlobContainerNode({
+              id: `azure-blob-container-${storage.accountName}-${container.name}`,
+              x: currentContainerX,
+              y: CONFIG.accountPadding.top,
+              width: computedContainerWidth,
+              height: computedContainerHeight,
+              label: container.name,
+              type: "azure-blob-container",
+              children: childNodes,
+              data: container,
+            }));
       
       currentContainerX += computedContainerWidth + CONFIG.gap;
       
@@ -510,16 +511,16 @@ export class AzureBlobDrawing implements IDrawingClass {
     const accountWidth = Math.max(300, currentContainerX > CONFIG.accountPadding.left ? currentContainerX - CONFIG.gap + CONFIG.accountPadding.right : 300);
     const accountHeight = Math.max(100, CONFIG.accountPadding.top + maxContainerHeight + CONFIG.accountPadding.bottom);
 
-    return {
-      id: `azure-blob-account-${storage.accountName}`,
-      x: startX,
-      y: startY,
-      width: accountWidth,
-      height: accountHeight,
-      label: storage.accountName,
-      type: "azure-blob-account",
-      children: containerNodes,
-      data: storage,
-    };
+    return new AzureStorageAccountNode({
+          id: `azure-blob-account-${storage.accountName}`,
+          x: startX,
+          y: startY,
+          width: accountWidth,
+          height: accountHeight,
+          label: storage.accountName,
+          type: "azure-blob-account",
+          children: containerNodes,
+          data: storage,
+        });
   }
 }

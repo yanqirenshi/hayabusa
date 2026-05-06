@@ -1,20 +1,21 @@
 import { IDrawingNode, IDrawingClass } from "@/core/interfaces";
 import { TerraformDirectory, TerraformFile } from "../data/TerraformData";
+import { TerraformFileNode, TerraformColumnNode, TerraformDirNode } from "./TerraformNodes";
 
 const CONFIG = {
   // Directory layout
-  padding: { top: 40, left: 20, right: 20, bottom: 20 },
+  padding: { top: 60, left: 20, right: 20, bottom: 20 },
   gap: 20,
   minWidth: 150,
   minHeight: 80,
 
   // Module Layout (3-Column)
-  colGap: 30,
-  colPadding: { top: 40, left: 15, right: 15, bottom: 15 },
+  colGap: 20,
+  colPadding: { top: 60, left: 20, right: 20, bottom: 20 },
   
   // File Layout
-  filePadding: { top: 30, left: 15, right: 15, bottom: 15 },
-  fileGap: 15,
+  filePadding: { top: 60, left: 20, right: 20, bottom: 20 },
+  fileGap: 20,
 
   // Record Layer
   itemHeight: 28,
@@ -123,16 +124,16 @@ export class TerraformDrawing implements IDrawingClass {
       const fileWidth = Math.max(fileTitleWidth, CONFIG.filePadding.left + maxItemWidth + CONFIG.filePadding.right);
       const fileHeight = currentY - CONFIG.itemGap + CONFIG.filePadding.bottom;
 
-      return {
-        id: `${dir.path}-${file.name}-${rendererType}-file`,
-        x: 0, // set by column layout
-        y: 0, // set by column layout
-        width: fileWidth,
-        height: fileHeight,
-        label: file.name,
-        type: "tf-file",
-        children: itemNodes
-      };
+      return new TerraformFileNode({
+              id: `${dir.path}-${file.name}-${rendererType}-file`,
+              x: 0, // set by column layout
+              y: 0, // set by column layout
+              width: fileWidth,
+              height: fileHeight,
+              label: file.name,
+              type: "tf-file",
+              children: itemNodes
+            });
     };
 
     // Distribute files to columns
@@ -174,16 +175,16 @@ export class TerraformDrawing implements IDrawingClass {
         // f.width = colWidth - CONFIG.colPadding.left - CONFIG.colPadding.right; // Optional expand
       });
 
-      colNodes.push({
-        id: `${dir.path}-col-${col.id}`,
-        x: currentX,
-        y: CONFIG.padding.top,
-        width: colWidth,
-        height: colHeight,
-        label: col.title,
-        type: "tf-column",
-        children: col.files
-      });
+      colNodes.push(new TerraformColumnNode({
+              id: `${dir.path}-col-${col.id}`,
+              x: currentX,
+              y: CONFIG.padding.top,
+              width: colWidth,
+              height: colHeight,
+              label: col.title,
+              type: "tf-column",
+              children: col.files
+            }));
 
       currentX += colWidth + CONFIG.colGap;
     }
@@ -197,16 +198,16 @@ export class TerraformDrawing implements IDrawingClass {
     const contentWidth = currentX > CONFIG.padding.left ? currentX - CONFIG.colGap + CONFIG.padding.right : 200;
     const contentHeight = CONFIG.padding.top + maxColHeight + CONFIG.padding.bottom;
 
-    return {
-      id: `tf-dir-${dir.name}-${depth}`,
-      x: 0,
-      y: 0,
-      width: Math.max(CONFIG.minWidth, Math.max(titleWidth, contentWidth)),
-      height: Math.max(CONFIG.minHeight, contentHeight),
-      label: dir.name,
-      type: "terraform-dir",
-      children: colNodes,
-    };
+    return new TerraformDirNode({
+          id: `tf-dir-${dir.name}-${depth}`,
+          x: 0,
+          y: 0,
+          width: Math.max(CONFIG.minWidth, Math.max(titleWidth, contentWidth)),
+          height: Math.max(CONFIG.minHeight, contentHeight),
+          label: dir.name,
+          type: "terraform-dir",
+          children: colNodes,
+        });
   }
 
   private computeLayout(dir: TerraformDirectory, depth: number): IDrawingNode {
@@ -268,28 +269,28 @@ export class TerraformDrawing implements IDrawingClass {
         contentHeight = currentY - CONFIG.gap + currentPadding.bottom;
       }
 
-      return {
-        id: `tf-dir-${dir.name}-${depth}`,
-        x: 0,
-        y: 0,
-        width: Math.max(minGroupWidth, contentWidth),
-        height: Math.max(CONFIG.minHeight, contentHeight),
-        label: dir.name,
-        type: "terraform-dir",
-        children: childrenNodes,
-      };
+      return new TerraformDirNode({
+              id: `tf-dir-${dir.name}-${depth}`,
+              x: 0,
+              y: 0,
+              width: Math.max(minGroupWidth, contentWidth),
+              height: Math.max(CONFIG.minHeight, contentHeight),
+              label: dir.name,
+              type: "terraform-dir",
+              children: childrenNodes,
+            });
 
     } else {
       // Leaf node (empty directory exactly)
-      return {
-        id: `tf-dir-${dir.name}-${depth}-leaf`,
-        x: 0,
-        y: 0,
-        width: minGroupWidth,
-        height: CONFIG.minHeight,
-        label: dir.name,
-        type: "terraform-dir",
-      };
+      return new TerraformDirNode({
+              id: `tf-dir-${dir.name}-${depth}-leaf`,
+              x: 0,
+              y: 0,
+              width: minGroupWidth,
+              height: CONFIG.minHeight,
+              label: dir.name,
+              type: "terraform-dir",
+            });
     }
   }
 }

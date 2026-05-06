@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { RoleGraphPOJO } from "../data/SnowflakeRoleData";
 import { SnowflakeRoleDrawing } from "../drawing/SnowflakeRoleDrawing";
 import { IDrawingEdge, IDrawingNode } from "@/core/interfaces";
+import BaseBoxNode from "@/components/BaseBoxNode";
 
 // ---- Tier visual styles (nodes only) ----
 const TIER_STYLES: Record<
@@ -23,32 +24,17 @@ const EDGE_WIDTH = 1.5;
 function RoleNode({ node }: { node: IDrawingNode }) {
   const bandType = node.type.replace("role-node-", "role-band-");
   const style = TIER_STYLES[bandType] ?? TIER_STYLES["role-band-custom"];
+  
+  const tierName = node.type.split("-").pop() || "Role";
+  const subtitle = tierName.charAt(0).toUpperCase() + tierName.slice(1) + " Role";
+
   return (
-    <g>
-      <rect
-        x={node.x}
-        y={node.y}
-        width={node.width}
-        height={node.height}
-        rx={6}
-        ry={6}
-        fill={style.nodeBg}
-        stroke={style.nodeBorder}
-        strokeWidth={1.5}
-      />
-      <text
-        x={node.x + node.width / 2}
-        y={node.y + node.height / 2}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill={style.nodeText}
-        fontSize={11}
-        fontFamily="Inter, Arial, sans-serif"
-        fontWeight="500"
-      >
-        {node.label}
-      </text>
-    </g>
+    <BaseBoxNode 
+      node={node} 
+      icon="👤" 
+      subtitle={subtitle}
+      strokeColor={style.nodeBorder}
+    />
   );
 }
 

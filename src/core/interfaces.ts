@@ -10,6 +10,8 @@ export interface IDrawingNode {
   height: number;
   label: string;
   type: string;
+  subtitle?: string;
+  icon?: string;
   children?: IDrawingNode[];
   data?: any;
 }
