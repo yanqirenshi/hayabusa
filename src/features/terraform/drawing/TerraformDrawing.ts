@@ -1,7 +1,7 @@
 import { IDrawingNode, IDrawingClass } from "@/core/interfaces";
 import { TerraformDirectory, TerraformFile } from "../data/TerraformData";
-import { TerraformBlockNode } from "./TerraformNodes";
-import { RootBoxNode, BranchBoxNode } from "@/core/models/BoxNode";
+
+import { RootBoxNode, BranchBoxNode, LeafBoxNodeTerraformItem } from "@/core/models/BoxNode";
 
 const CONFIG = {
   // Directory layout

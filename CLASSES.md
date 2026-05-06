@@ -12,15 +12,6 @@ BoxNode (src/core/models/BoxNode.ts)
 ├─ BranchBoxNode
 │
 └─ LeafBoxNode
-   ├─ AzureEntraUser                 (User)
-   ├─ AzureEntraGroup                (Group)
-   ├─ AzureEntraApp                  (App Registration)
-   ├─ AzureBlobItemNode              (Blob Item)
-   ├─ AzureDevOpsRepoNode            (Repository)
-   ├─ AzureDevOpsPipelineNode        (Pipeline)
-   ├─ SnowflakeObjectNode            (Role)
-   ├─ SnowflakeRoleNode              (Role)
-   └─ TerraformBlockNode             (Block)
 ```
 
 ### クラスの責務
@@ -50,58 +41,4 @@ BoxNode (src/core/models/BoxNode.ts)
 
 
 ## LeafBoxNode
-
-### AzureEntraUser
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-User
-
-### AzureEntraGroup
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Group
-
-### AzureEntraApp
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-App Registration
-
-### AzureBlobItemNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Blob Item
-
-### AzureDevOpsRepoNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Repository
-
-### AzureDevOpsPipelineNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Pipeline
-
-### SnowflakeObjectNode
-
-file: src/features/snowflake/drawing/SnowflakeNodes.ts
-
-Role
-
-### SnowflakeRoleNode
-
-file: src/features/snowflake/drawing/SnowflakeNodes.ts
-
-Role
-
-### TerraformBlockNode
-
-file: src/features/terraform/drawing/TerraformNodes.ts
-
-Block
 

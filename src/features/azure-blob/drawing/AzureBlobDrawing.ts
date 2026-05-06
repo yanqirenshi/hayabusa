@@ -1,7 +1,7 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
-import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureBlobItemNode } from "./AzureNodes";
-import { RootBoxNode, BranchBoxNode } from "@/core/models/BoxNode";
+
+import { RootBoxNode, BranchBoxNode, LeafBoxNodeDefault } from "@/core/models/BoxNode";
 
 const CONFIG = {
   tenantPadding: { top: 60, right: 20, bottom: 20, left: 20 },
@@ -76,7 +76,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       const userColNodes: IDrawingNode[] = [];
 
       for (const u of tenant.users) {
-        userColNodes.push(new AzureEntraUser({
+        userColNodes.push(new LeafBoxNodeDefault({
           id: `azure-user-${u.userPrincipalName}`,
           x: 20,
           y: relativeY,
@@ -116,7 +116,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       const groupColNodes: IDrawingNode[] = [];
 
       for (const g of tenant.groups) {
-        groupColNodes.push(new AzureEntraGroup({
+        groupColNodes.push(new LeafBoxNodeDefault({
           id: `azure-group-${g.id}`,
           x: 20,
           y: relativeY,
@@ -156,7 +156,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       const appColNodes: IDrawingNode[] = [];
 
       for (const a of tenant.apps) {
-        appColNodes.push(new AzureEntraApp({
+        appColNodes.push(new LeafBoxNodeDefault({
           id: `azure-app-${a.appId}`,
           x: 20,
           y: relativeY,
@@ -250,7 +250,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       const devOpsNodes: IDrawingNode[] = [];
 
       for (const r of d.repos) {
-        devOpsNodes.push(new AzureDevOpsRepoNode({
+        devOpsNodes.push(new LeafBoxNodeDefault({
           id: `azure-devops-repo-${r.id}`,
           x: 20,
           y: relativeY,
@@ -263,7 +263,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
       for (const p of d.pipelines) {
-        devOpsNodes.push(new AzureDevOpsPipelineNode({
+        devOpsNodes.push(new LeafBoxNodeDefault({
           id: `azure-devops-pipe-${p.id}`,
           x: 20,
           y: relativeY,
@@ -415,7 +415,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const maxItemWidth = CONFIG.itemWidth;
 
     for (const repo of acr.repositories) {
-      childNodes.push(new AzureBlobItemNode({
+      childNodes.push(new LeafBoxNodeDefault({
               id: `azure-acr-${acr.name}-repo-${repo}`,
               x: CONFIG.containerPadding.left,
               y: currentItemY,
@@ -463,7 +463,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const maxItemWidth = CONFIG.itemWidth;
 
     for (const pipeline of adf.pipelines) {
-      childNodes.push(new AzureDevOpsPipelineNode({
+      childNodes.push(new LeafBoxNodeDefault({
               id: `azure-adf-${adf.name}-pipeline-${pipeline.name}`,
               x: CONFIG.containerPadding.left,
               y: currentItemY,
@@ -515,7 +515,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       }
 
       for (const dir of container.directories) {
-        childNodes.push(new AzureBlobItemNode({
+        childNodes.push(new LeafBoxNodeDefault({
                   id: `${storage.accountName}-${container.name}-dir-${dir.name}`,
                   x: CONFIG.containerPadding.left,
                   y: currentItemY,
@@ -529,7 +529,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       }
 
       for (const blob of container.blobs) {
-        childNodes.push(new AzureBlobItemNode({
+        childNodes.push(new LeafBoxNodeDefault({
                   id: `${storage.accountName}-${container.name}-blob-${blob.name}`,
                   x: CONFIG.containerPadding.left,
                   y: currentItemY,
