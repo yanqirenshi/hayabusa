@@ -1,10 +1,6 @@
 import { RootBoxNode, BranchBoxNode, LeafBoxNode } from "@/core/models/BoxNode";
 import { IDrawingNode } from "@/core/interfaces";
 
-export class TerraformRootNode extends RootBoxNode {
-  get icon() { return "📁"; }
-  get subtitle() { return "Terraform Root"; }
-}
 
 export class TerraformDirNode extends BranchBoxNode {
   get icon() { return "📁"; }

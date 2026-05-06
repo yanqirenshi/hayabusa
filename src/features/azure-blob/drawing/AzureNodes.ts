@@ -3,11 +3,6 @@ import { IDrawingNode } from "@/core/interfaces";
 
 // === Entra ID Nodes ===
 
-export class AzureEntraRoot extends RootBoxNode {
-  get icon() { return "🆔"; }
-  get subtitle() { return "Microsoft Entra ID"; }
-}
-
 export class AzureEntraContainer extends BranchBoxNode {
   get icon() { return "🗂"; }
   get subtitle() { return "Container"; }
@@ -30,10 +25,6 @@ export class AzureEntraApp extends LeafBoxNode {
 
 // === ARM Nodes ===
 
-export class AzureArmRoot extends RootBoxNode {
-  get icon() { return "⚙️"; }
-  get subtitle() { return "Azure Resource Manager"; }
-}
 
 export class AzureManagementGroupNode extends BranchBoxNode {
   get icon() { return "🏢"; }
@@ -82,10 +73,6 @@ export class AzureDataFactoryNode extends BranchBoxNode {
 
 // === DevOps Nodes ===
 
-export class AzureDevOpsRoot extends RootBoxNode {
-  get icon() { return "🚀"; }
-  get subtitle() { return "Azure DevOps"; }
-}
 
 export class AzureDevOpsOrganizationNode extends BranchBoxNode {
   get icon() { return "🏢"; }

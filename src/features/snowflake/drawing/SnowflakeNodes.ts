@@ -1,10 +1,6 @@
 import { RootBoxNode, BranchBoxNode, LeafBoxNode } from "@/core/models/BoxNode";
 import { IDrawingNode } from "@/core/interfaces";
 
-export class SnowflakeDatabaseNode extends RootBoxNode {
-  get icon() { return "❄️"; }
-  get subtitle() { return "Database"; }
-}
 
 export class SnowflakeSchemaNode extends BranchBoxNode {
   get icon() { return "📁"; }

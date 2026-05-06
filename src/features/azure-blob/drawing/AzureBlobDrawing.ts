@@ -1,6 +1,7 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
-import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureDevOpsOrganizationNode, AzureManagementGroupNode, AzureSubscriptionNode, AzureResourceGroupNode, AzureBlobItemNode, AzureContainerRegistryNode, AzureBatchNode, AzureDataFactoryNode, AzureBlobContainerNode, AzureStorageAccountNode, AzureEntraRoot, AzureEntraContainer, AzureArmRoot, AzureDevOpsRoot } from "./AzureNodes";
+import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureDevOpsOrganizationNode, AzureManagementGroupNode, AzureSubscriptionNode, AzureResourceGroupNode, AzureBlobItemNode, AzureContainerRegistryNode, AzureBatchNode, AzureDataFactoryNode, AzureBlobContainerNode, AzureStorageAccountNode, AzureEntraContainer } from "./AzureNodes";
+import { RootBoxNode } from "@/core/models/BoxNode";
 
 const CONFIG = {
   tenantPadding: { top: 60, right: 20, bottom: 20, left: 20 },
@@ -191,7 +192,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
     const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
 
-    return new AzureEntraRoot({
+    return new RootBoxNode({
       id: `azure-entra-root-${tenant.name}`,
       x: startX,
       y: startY,
@@ -223,7 +224,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
     const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
 
-    return new AzureArmRoot({
+    return new RootBoxNode({
       id: `azure-arm-root-${tenant.name}`,
       x: startX,
       y: startY,
@@ -298,7 +299,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
     const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
 
-    return new AzureDevOpsRoot({
+    return new RootBoxNode({
       id: `azure-devops-root-${tenant.name}`,
       x: startX,
       y: startY,
