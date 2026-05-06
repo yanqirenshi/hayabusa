@@ -27,35 +27,64 @@ export class AzureBlobDrawing implements IDrawingClass {
   private computeLayout(tenant: AzureTenant) {
     this.nodes = [];
     
-    const tenantNode = this.layoutTenant(tenant, 0, 0);
-    this.width = tenantNode.width;
-    this.height = tenantNode.height;
+    let currentY = 0;
+    const startX = 0;
     
-    this.nodes = [tenantNode];
+    // 1. Entra ID
+    const entraNode = this.layoutEntraId(tenant, startX, currentY);
+    if (entraNode) {
+      this.nodes.push(entraNode);
+      currentY += entraNode.height + CONFIG.gap;
+      this.width = Math.max(this.width, entraNode.width);
+    }
+    
+    // 2. ARM
+    const armNode = this.layoutARM(tenant, startX, currentY);
+    if (armNode) {
+      this.nodes.push(armNode);
+      currentY += armNode.height + CONFIG.gap;
+      this.width = Math.max(this.width, armNode.width);
+    }
+    
+    // 3. DevOps
+    const devOpsNode = this.layoutDevOps(tenant, startX, currentY);
+    if (devOpsNode) {
+      this.nodes.push(devOpsNode);
+      currentY += devOpsNode.height + CONFIG.gap;
+      this.width = Math.max(this.width, devOpsNode.width);
+    }
+    
+    this.height = currentY;
   }
 
-  private layoutTenant(tenant: AzureTenant, startX: number, startY: number): IDrawingNode {
+  private layoutEntraId(tenant: AzureTenant, startX: number, startY: number): IDrawingNode | null {
+    const hasUsers = tenant.users && tenant.users.length > 0;
+    const hasGroups = tenant.groups && tenant.groups.length > 0;
+    const hasApps = tenant.apps && tenant.apps.length > 0;
+    
+    if (!hasUsers && !hasGroups && !hasApps) return null;
+
     const childNodes: IDrawingNode[] = [];
     let currentX = CONFIG.tenantPadding.left;
     let maxOverallHeight = CONFIG.tenantPadding.top;
 
     // 1. Users Column
-    if (tenant.users && tenant.users.length > 0) {
+    if (hasUsers) {
       let relativeY = 60;
       let maxWidth = 280;
       const userColNodes: IDrawingNode[] = [];
 
       for (const u of tenant.users) {
         userColNodes.push(new AzureEntraUser({
-                  id: `azure-user-${u.userPrincipalName}`,
-                  x: 20,
-                  y: relativeY,
-                  width: maxWidth - 40,
-                  height: CONFIG.itemHeight,
-                  label: u.displayName,
-                  type: "azure-entra-user",
-                  data: u
-                }));
+          id: `azure-user-${u.userPrincipalName}`,
+          x: 20,
+          y: relativeY,
+          width: maxWidth - 40,
+          height: CONFIG.itemHeight,
+          label: u.displayName,
+          type: "azure-entra-user",
+          data: u
+        }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -80,22 +109,22 @@ export class AzureBlobDrawing implements IDrawingClass {
     }
 
     // 2. Groups Column
-    if (tenant.groups && tenant.groups.length > 0) {
+    if (hasGroups) {
       let relativeY = 60;
       let maxWidth = 280;
       const groupColNodes: IDrawingNode[] = [];
 
       for (const g of tenant.groups) {
         groupColNodes.push(new AzureEntraGroup({
-                  id: `azure-group-${g.id}`,
-                  x: 20,
-                  y: relativeY,
-                  width: maxWidth - 40,
-                  height: CONFIG.itemHeight,
-                  label: g.displayName,
-                  type: "azure-entra-group",
-                  data: g
-                }));
+          id: `azure-group-${g.id}`,
+          x: 20,
+          y: relativeY,
+          width: maxWidth - 40,
+          height: CONFIG.itemHeight,
+          label: g.displayName,
+          type: "azure-entra-group",
+          data: g
+        }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -120,22 +149,22 @@ export class AzureBlobDrawing implements IDrawingClass {
     }
 
     // 3. Apps Column
-    if (tenant.apps && tenant.apps.length > 0) {
+    if (hasApps) {
       let relativeY = 60;
       let maxWidth = 280;
       const appColNodes: IDrawingNode[] = [];
 
       for (const a of tenant.apps) {
         appColNodes.push(new AzureEntraApp({
-                  id: `azure-app-${a.appId}`,
-                  x: 20,
-                  y: relativeY,
-                  width: maxWidth - 40,
-                  height: CONFIG.itemHeight,
-                  label: a.displayName,
-                  type: "azure-entra-app",
-                  data: a
-                }));
+          id: `azure-app-${a.appId}`,
+          x: 20,
+          y: relativeY,
+          width: maxWidth - 40,
+          height: CONFIG.itemHeight,
+          label: a.displayName,
+          type: "azure-entra-app",
+          data: a
+        }));
         relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
@@ -159,40 +188,91 @@ export class AzureBlobDrawing implements IDrawingClass {
       currentX += maxWidth + CONFIG.gap;
     }
 
-    // 4. DevOps Column
-    if (tenant.devOps && tenant.devOps.length > 0) {
+    const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
+    const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
+
+    return new AzureEntraRoot({
+      id: `azure-entra-root-${tenant.name}`,
+      x: startX,
+      y: startY,
+      width: containerWidth,
+      height: containerHeight,
+      label: "Microsoft Entra ID",
+      type: "azure-entra-root",
+      children: childNodes,
+      data: { name: "Microsoft Entra ID", type: "Entra ID" }
+    });
+  }
+
+  private layoutARM(tenant: AzureTenant, startX: number, startY: number): IDrawingNode | null {
+    if (!tenant.managementGroups || tenant.managementGroups.length === 0) return null;
+
+    const childNodes: IDrawingNode[] = [];
+    let currentX = CONFIG.tenantPadding.left;
+    let maxOverallHeight = CONFIG.tenantPadding.top;
+
+    for (const mg of tenant.managementGroups) {
+      const mgNode = this.layoutManagementGroup(mg, currentX, CONFIG.tenantPadding.top);
+      childNodes.push(mgNode);
+      currentX += mgNode.width + CONFIG.gap;
+      if (mgNode.height + CONFIG.tenantPadding.top > maxOverallHeight) {
+        maxOverallHeight = mgNode.height + CONFIG.tenantPadding.top;
+      }
+    }
+
+    const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
+    const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
+
+    return new AzureArmRoot({
+      id: `azure-arm-root-${tenant.name}`,
+      x: startX,
+      y: startY,
+      width: containerWidth,
+      height: containerHeight,
+      label: "Azure Resource Manager",
+      type: "azure-arm-root",
+      children: childNodes,
+      data: { name: "Azure Resource Manager", type: "ARM" }
+    });
+  }
+
+  private layoutDevOps(tenant: AzureTenant, startX: number, startY: number): IDrawingNode | null {
+    if (!tenant.devOps || tenant.devOps.length === 0) return null;
+
+    const childNodes: IDrawingNode[] = [];
+    let currentX = CONFIG.tenantPadding.left;
+    let maxOverallHeight = CONFIG.tenantPadding.top;
+
+    for (const d of tenant.devOps) {
       let relativeY = 60;
       let maxWidth = 280;
       const devOpsNodes: IDrawingNode[] = [];
 
-      for (const d of tenant.devOps) {
-        // Simple list of Repos and Pipelines
-        for (const r of d.repos) {
-          devOpsNodes.push(new AzureDevOpsRepoNode({
-                      id: `azure-devops-repo-${r.id}`,
-                      x: 20,
-                      y: relativeY,
-                      width: maxWidth - 40,
-                      height: CONFIG.itemHeight,
-                      label: r.name,
-                      type: "azure-devops-repo",
-                      data: r
-                    }));
-          relativeY += CONFIG.itemHeight + CONFIG.itemGap;
-        }
-        for (const p of d.pipelines) {
-          devOpsNodes.push(new AzureDevOpsPipelineNode({
-                      id: `azure-devops-pipe-${p.id}`,
-                      x: 20,
-                      y: relativeY,
-                      width: maxWidth - 40,
-                      height: CONFIG.itemHeight,
-                      label: p.name,
-                      type: "azure-devops-pipeline",
-                      data: p
-                    }));
-          relativeY += CONFIG.itemHeight + CONFIG.itemGap;
-        }
+      for (const r of d.repos) {
+        devOpsNodes.push(new AzureDevOpsRepoNode({
+          id: `azure-devops-repo-${r.id}`,
+          x: 20,
+          y: relativeY,
+          width: maxWidth - 40,
+          height: CONFIG.itemHeight,
+          label: r.name,
+          type: "azure-devops-repo",
+          data: r
+        }));
+        relativeY += CONFIG.itemHeight + CONFIG.itemGap;
+      }
+      for (const p of d.pipelines) {
+        devOpsNodes.push(new AzureDevOpsPipelineNode({
+          id: `azure-devops-pipe-${p.id}`,
+          x: 20,
+          y: relativeY,
+          width: maxWidth - 40,
+          height: CONFIG.itemHeight,
+          label: p.name,
+          type: "azure-devops-pipeline",
+          data: p
+        }));
+        relativeY += CONFIG.itemHeight + CONFIG.itemGap;
       }
 
       const colHeight = Math.max(200, relativeY + 20);
@@ -201,55 +281,34 @@ export class AzureBlobDrawing implements IDrawingClass {
       }
 
       childNodes.push(new AzureDevOpsOrganizationNode({
-              id: `azure-devops-col`,
-              x: currentX,
-              y: CONFIG.tenantPadding.top,
-              width: maxWidth,
-              height: colHeight,
-              label: "Azure DevOps",
-              type: "azure-devops-container",
-              children: devOpsNodes,
-              data: null
-            }));
+        id: `azure-devops-col-${d.organizationName}`,
+        x: currentX,
+        y: CONFIG.tenantPadding.top,
+        width: maxWidth,
+        height: colHeight,
+        label: d.organizationName || "Azure DevOps",
+        type: "azure-devops-container",
+        children: devOpsNodes,
+        data: d
+      }));
 
       currentX += maxWidth + CONFIG.gap;
     }
 
-    // 5. Management Groups Column
-    if (tenant.managementGroups && tenant.managementGroups.length > 0) {
-      let mgY = CONFIG.tenantPadding.top;
-      let maxMgWidth = 0;
+    const containerWidth = Math.max(500, currentX - CONFIG.gap + CONFIG.tenantPadding.right);
+    const containerHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
 
-      for (const mg of tenant.managementGroups) {
-        const mgNode = this.layoutManagementGroup(mg, currentX, mgY);
-        childNodes.push(mgNode);
-        mgY += mgNode.height + CONFIG.gap;
-        if (mgNode.width > maxMgWidth) maxMgWidth = mgNode.width;
-      }
-
-      if (mgY > maxOverallHeight) {
-        maxOverallHeight = mgY;
-      }
-      currentX += maxMgWidth;
-    } else {
-      // In case there are no MGs, remove the extra gap
-      currentX -= CONFIG.gap;
-    }
-
-    const tenantWidth = Math.max(500, currentX + CONFIG.tenantPadding.right);
-    const tenantHeight = Math.max(250, maxOverallHeight + CONFIG.tenantPadding.bottom);
-
-    return {
-      id: `azure-tenant-${tenant.name}`,
+    return new AzureDevOpsRoot({
+      id: `azure-devops-root-${tenant.name}`,
       x: startX,
       y: startY,
-      width: tenantWidth,
-      height: tenantHeight,
-      label: tenant.name,
-      type: "azure-tenant",
+      width: containerWidth,
+      height: containerHeight,
+      label: "Azure DevOps",
+      type: "azure-devops-root",
       children: childNodes,
-      data: tenant
-    };
+      data: { name: "Azure DevOps", type: "DevOps" }
+    });
   }
 
   private layoutManagementGroup(mg: AzureManagementGroup, startX: number, startY: number): IDrawingNode {
