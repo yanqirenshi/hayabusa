@@ -52,19 +52,30 @@ export default function BaseBoxNode({
         fill="#efefef"
       />
       
-      {/* Icon Text */}
+      {/* Icon: SVG file or emoji */}
       {displayIcon && (
-        <text 
-          x={iconWidth / 2} 
-          y={iconWidth / 2} 
-          fill="#475569" 
-          fontSize="18px" 
-          textAnchor="middle" 
-          dominantBaseline="central"
-          style={{ pointerEvents: "none" }}
-        >
-          {displayIcon}
-        </text>
+        displayIcon.startsWith('/') || displayIcon.startsWith('http') ? (
+          <image
+            href={displayIcon}
+            x={4}
+            y={4}
+            width={iconWidth - 8}
+            height={iconWidth - 8}
+            style={{ pointerEvents: "none" }}
+          />
+        ) : (
+          <text 
+            x={iconWidth / 2} 
+            y={iconWidth / 2} 
+            fill="#475569" 
+            fontSize="18px" 
+            textAnchor="middle" 
+            dominantBaseline="central"
+            style={{ pointerEvents: "none" }}
+          >
+            {displayIcon}
+          </text>
+        )
       )}
 
       {/* Subtitle */}
