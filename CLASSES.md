@@ -10,21 +10,6 @@ BoxNode (src/core/models/BoxNode.ts)
 ├─ RootBoxNode
 │
 ├─ BranchBoxNode
-│  ├─ AzureEntraContainer            (Container)
-│  ├─ AzureManagementGroupNode       (Management Group)
-│  ├─ AzureSubscriptionNode          (Subscription)
-│  ├─ AzureResourceGroupNode         (Resource Group)
-│  ├─ AzureStorageAccountNode        (Storage Account)
-│  ├─ AzureBlobContainerNode         (Blob Container)
-│  ├─ AzureBatchNode                 (Batch Account)
-│  ├─ AzureContainerRegistryNode     (Container Registry)
-│  ├─ AzureDataFactoryNode           (Data Factory)
-│  ├─ AzureDevOpsOrganizationNode    (Organization)
-│  ├─ SnowflakeSchemaNode            (Schema)
-│  ├─ SnowflakeGroupNode             (Group)
-│  ├─ TerraformDirNode               (Directory)
-│  ├─ TerraformColumnNode            (Column)
-│  └─ TerraformFileNode              (Terraform File)
 │
 └─ LeafBoxNode
    ├─ AzureEntraUser                 (User)
@@ -62,96 +47,6 @@ BoxNode (src/core/models/BoxNode.ts)
 
 
 ## BranchBoxNode
-
-### AzureEntraContainer
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Container
-
-### AzureManagementGroupNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Management Group
-
-### AzureSubscriptionNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Subscription
-
-### AzureResourceGroupNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Resource Group
-
-### AzureStorageAccountNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Storage Account
-
-### AzureBlobContainerNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Blob Container
-
-### AzureBatchNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Batch Account
-
-### AzureContainerRegistryNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Container Registry
-
-### AzureDataFactoryNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Data Factory
-
-### AzureDevOpsOrganizationNode
-
-file: src/features/azure-blob/drawing/AzureNodes.ts
-
-Organization
-
-### SnowflakeSchemaNode
-
-file: src/features/snowflake/drawing/SnowflakeNodes.ts
-
-Schema
-
-### SnowflakeGroupNode
-
-file: src/features/snowflake/drawing/SnowflakeNodes.ts
-
-Group
-
-### TerraformDirNode
-
-file: src/features/terraform/drawing/TerraformNodes.ts
-
-Directory
-
-### TerraformColumnNode
-
-file: src/features/terraform/drawing/TerraformNodes.ts
-
-Column
-
-### TerraformFileNode
-
-file: src/features/terraform/drawing/TerraformNodes.ts
-
-Terraform File
 
 
 ## LeafBoxNode

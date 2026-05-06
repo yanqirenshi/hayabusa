@@ -1,7 +1,7 @@
 import { IDrawingNode, IDrawingClass } from "@/core/interfaces";
 import { TerraformDirectory, TerraformFile } from "../data/TerraformData";
-import { TerraformFileNode, TerraformColumnNode, TerraformDirNode } from "./TerraformNodes";
-import { RootBoxNode } from "@/core/models/BoxNode";
+import { TerraformBlockNode } from "./TerraformNodes";
+import { RootBoxNode, BranchBoxNode } from "@/core/models/BoxNode";
 
 const CONFIG = {
   // Directory layout
@@ -125,7 +125,7 @@ export class TerraformDrawing implements IDrawingClass {
       const fileWidth = Math.max(fileTitleWidth, CONFIG.filePadding.left + maxItemWidth + CONFIG.filePadding.right);
       const fileHeight = currentY - CONFIG.itemGap + CONFIG.filePadding.bottom;
 
-      return new TerraformFileNode({
+      return new BranchBoxNode({
               id: `${dir.path}-${file.name}-${rendererType}-file`,
               x: 0, // set by column layout
               y: 0, // set by column layout
@@ -176,7 +176,7 @@ export class TerraformDrawing implements IDrawingClass {
         // f.width = colWidth - CONFIG.colPadding.left - CONFIG.colPadding.right; // Optional expand
       });
 
-      colNodes.push(new TerraformColumnNode({
+      colNodes.push(new BranchBoxNode({
               id: `${dir.path}-col-${col.id}`,
               x: currentX,
               y: CONFIG.padding.top,
@@ -199,7 +199,7 @@ export class TerraformDrawing implements IDrawingClass {
     const contentWidth = currentX > CONFIG.padding.left ? currentX - CONFIG.colGap + CONFIG.padding.right : 200;
     const contentHeight = CONFIG.padding.top + maxColHeight + CONFIG.padding.bottom;
 
-    return new TerraformDirNode({
+    return new BranchBoxNode({
           id: `tf-dir-${dir.name}-${depth}`,
           x: 0,
           y: 0,
@@ -270,7 +270,7 @@ export class TerraformDrawing implements IDrawingClass {
         contentHeight = currentY - CONFIG.gap + currentPadding.bottom;
       }
 
-      return new TerraformDirNode({
+      return new BranchBoxNode({
               id: `tf-dir-${dir.name}-${depth}`,
               x: 0,
               y: 0,
@@ -283,7 +283,7 @@ export class TerraformDrawing implements IDrawingClass {
 
     } else {
       // Leaf node (empty directory exactly)
-      return new TerraformDirNode({
+      return new BranchBoxNode({
               id: `tf-dir-${dir.name}-${depth}-leaf`,
               x: 0,
               y: 0,

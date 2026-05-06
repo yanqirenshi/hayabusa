@@ -1,7 +1,7 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { AzureManagementGroup, AzureSubscription, AzureResourceGroup, AzureBlobStorage, AzureBlobContainer, AzureTenant, AzureDevOps, AzureContainerRegistry, AzureBatch, AzureDataFactory } from "../data/AzureBlobData";
-import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureDevOpsOrganizationNode, AzureManagementGroupNode, AzureSubscriptionNode, AzureResourceGroupNode, AzureBlobItemNode, AzureContainerRegistryNode, AzureBatchNode, AzureDataFactoryNode, AzureBlobContainerNode, AzureStorageAccountNode, AzureEntraContainer } from "./AzureNodes";
-import { RootBoxNode } from "@/core/models/BoxNode";
+import { AzureEntraUser, AzureEntraGroup, AzureEntraApp, AzureDevOpsRepoNode, AzureDevOpsPipelineNode, AzureBlobItemNode } from "./AzureNodes";
+import { RootBoxNode, BranchBoxNode } from "@/core/models/BoxNode";
 
 const CONFIG = {
   tenantPadding: { top: 60, right: 20, bottom: 20, left: 20 },
@@ -94,7 +94,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push(new AzureEntraContainer({
+      childNodes.push(new BranchBoxNode({
         id: `azure-users-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -134,7 +134,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push(new AzureEntraContainer({
+      childNodes.push(new BranchBoxNode({
         id: `azure-groups-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -174,7 +174,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push(new AzureEntraContainer({
+      childNodes.push(new BranchBoxNode({
         id: `azure-apps-col`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -281,7 +281,7 @@ export class AzureBlobDrawing implements IDrawingClass {
         maxOverallHeight = CONFIG.tenantPadding.top + colHeight;
       }
 
-      childNodes.push(new AzureDevOpsOrganizationNode({
+      childNodes.push(new BranchBoxNode({
         id: `azure-devops-col-${d.organizationName}`,
         x: currentX,
         y: CONFIG.tenantPadding.top,
@@ -327,7 +327,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const mgWidth = Math.max(400, CONFIG.mgPadding.left + maxWidth + CONFIG.mgPadding.right);
     const mgHeight = Math.max(200, currentY > CONFIG.mgPadding.top ? currentY - CONFIG.gap + CONFIG.mgPadding.bottom : CONFIG.mgPadding.top + CONFIG.mgPadding.bottom);
 
-    return new AzureManagementGroupNode({
+    return new BranchBoxNode({
           id: `azure-mg-${mg.name}`,
           x: startX,
           y: startY,
@@ -355,7 +355,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const subWidth = Math.max(350, CONFIG.subPadding.left + maxWidth + CONFIG.subPadding.right);
     const subHeight = Math.max(150, currentY > CONFIG.subPadding.top ? currentY - CONFIG.gap + CONFIG.subPadding.bottom : CONFIG.subPadding.top + CONFIG.subPadding.bottom);
 
-    return new AzureSubscriptionNode({
+    return new BranchBoxNode({
           id: `azure-sub-${sub.name}`,
           x: startX,
           y: startY,
@@ -396,7 +396,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const rgWidth = Math.max(300, CONFIG.rgPadding.left + maxWidth + CONFIG.rgPadding.right);
     const rgHeight = Math.max(100, currentY > CONFIG.rgPadding.top ? currentY - CONFIG.gap + CONFIG.rgPadding.bottom : CONFIG.rgPadding.top + CONFIG.rgPadding.bottom);
 
-    return new AzureResourceGroupNode({
+    return new BranchBoxNode({
           id: `azure-rg-${rg.name}`,
           x: startX,
           y: startY,
@@ -431,7 +431,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const acrWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
     const acrHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
 
-    return new AzureContainerRegistryNode({
+    return new BranchBoxNode({
           id: `azure-acr-${acr.name}`,
           x: startX,
           y: startY,
@@ -445,7 +445,7 @@ export class AzureBlobDrawing implements IDrawingClass {
   }
 
   private layoutBatch(batch: AzureBatch, startX: number, startY: number): IDrawingNode {
-    return new AzureBatchNode({
+    return new BranchBoxNode({
           id: `azure-batch-${batch.name}`,
           x: startX,
           y: startY,
@@ -479,7 +479,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const adfWidth = Math.max(300, CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right);
     const adfHeight = Math.max(60, currentItemY > CONFIG.containerPadding.top ? currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom : 60);
 
-    return new AzureDataFactoryNode({
+    return new BranchBoxNode({
           id: `azure-adf-${adf.name}`,
           x: startX,
           y: startY,
@@ -545,7 +545,7 @@ export class AzureBlobDrawing implements IDrawingClass {
       const computedContainerWidth = CONFIG.containerPadding.left + maxItemWidth + CONFIG.containerPadding.right;
       const computedContainerHeight = Math.max(200, currentItemY - CONFIG.itemGap + CONFIG.containerPadding.bottom);
       
-      containerNodes.push(new AzureBlobContainerNode({
+      containerNodes.push(new BranchBoxNode({
               id: `azure-blob-container-${storage.accountName}-${container.name}`,
               x: currentContainerX,
               y: CONFIG.accountPadding.top,
@@ -571,7 +571,7 @@ export class AzureBlobDrawing implements IDrawingClass {
     const accountWidth = Math.max(300, currentContainerX > CONFIG.accountPadding.left ? currentContainerX - CONFIG.gap + CONFIG.accountPadding.right : 300);
     const accountHeight = Math.max(100, CONFIG.accountPadding.top + maxContainerHeight + CONFIG.accountPadding.bottom);
 
-    return new AzureStorageAccountNode({
+    return new BranchBoxNode({
           id: `azure-blob-account-${storage.accountName}`,
           x: startX,
           y: startY,

@@ -1,6 +1,6 @@
 import { IDrawingClass, IDrawingNode } from "@/core/interfaces";
 import { SnowflakeDatabase, SnowflakeSchema, SnowflakeObjectGroup, SnowflakeObject } from "../data/SnowflakeData";
-import { RootBoxNode } from "@/core/models/BoxNode";
+import { RootBoxNode, BranchBoxNode } from "@/core/models/BoxNode";
 
 // Define layout constants
 const CONFIG = {
