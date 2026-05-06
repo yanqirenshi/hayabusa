@@ -12,13 +12,19 @@ BoxNode (src/core/models/BoxNode.ts)
 ├─ BranchBoxNode
 │
 └─ LeafBoxNode
+   ├─ LeafBoxNodeDefault
+   ├─ LeafBoxNodeRoleItem
+   └─ LeafBoxNodeTerraformItem
 ```
 
 ### クラスの責務
 - **`BoxNode`**: 描画に必要な基本情報を保持。
-- **`RootBoxNode`**: 最上位のコンテナとして機能し、太めの枠線 (`strokeWidth: 3`) を持ちます。
-- **`BranchBoxNode`**: 中間層のコンテナとして機能 (`strokeWidth: 2`)。
-- **`LeafBoxNode`**: 最下層の末端アイテムとして機能 (`strokeWidth: 1.5`)。
+- **`RootBoxNode`**: 最上位のコンテナ。`type` で `icon`/`subtitle` を切替 (`strokeWidth: 3`)。
+- **`BranchBoxNode`**: 中間層のコンテナ。`type` で `icon`/`subtitle` を切替 (`strokeWidth: 2`)。
+- **`LeafBoxNode`**: 末端アイテムの抽象基底クラス (`strokeWidth: 1.5`)。
+  - **`LeafBoxNodeDefault`**: 汎用末端ノード。`type` でアイコン・サブタイトルを切替。
+  - **`LeafBoxNodeRoleItem`**: ロール専用（Snowflake ロール等）。
+  - **`LeafBoxNodeTerraformItem`**: Terraform ブロックアイテム専用。
 
 # クラス
 
@@ -39,6 +45,40 @@ BoxNode (src/core/models/BoxNode.ts)
 
 ## BranchBoxNode
 
+`BranchBoxNode` は具象クラスであり、直接インスタンス化されます。
 
-## LeafBoxNode
+| type | subtitle |
+|------|----------|
+| `azure-entra-users-container` | Container |
+| `azure-entra-groups-container` | Container |
+| `azure-entra-apps-container` | Container |
+| `azure-management-group` | Management Group |
+| `azure-subscription` | Subscription |
+| `azure-resource-group` | Resource Group |
+| `azure-blob-account` | Storage Account |
+| `azure-blob-container` | Blob Container |
+| `azure-batch` | Batch Account |
+| `azure-acr` | Container Registry |
+| `azure-adf` | Data Factory |
+| `azure-devops-container` | Organization |
+| `snowflake-schema` | Schema |
+| `snowflake-group` | Group |
+| `terraform-dir` | Directory |
+| `terraform-column` | Column |
+| `tf-file` | Terraform File |
+
+
+## LeafBoxNodeDefault
+
+file: src/core/models/BoxNode.ts
+
+
+## LeafBoxNodeRoleItem
+
+file: src/core/models/BoxNode.ts
+
+
+## LeafBoxNodeTerraformItem
+
+file: src/core/models/BoxNode.ts
 
