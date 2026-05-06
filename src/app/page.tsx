@@ -1,5 +1,6 @@
 import React from "react";
 import MainCanvasRenderer from "@/components/MainCanvasRenderer";
+import DynamicCanvasLayout from "@/components/DynamicCanvasLayout";
 import SnowflakeContainerRenderer from "@/features/snowflake/components/SnowflakeContainerRenderer";
 import TerraformClientRenderer from "@/features/terraform/components/TerraformClientRenderer";
 import AzureBlobClientRenderer from "@/features/azure-blob/components/AzureBlobClientRenderer";
@@ -100,32 +101,35 @@ export default async function Home() {
   return (
     <div style={{ padding: 0, margin: 0, height: "100vh", overflow: "hidden", fontFamily: "sans-serif" }}>
       <main style={{ height: "100%", width: "100%" }}>
-        {/*
+        {/* 
           Global Canvas.
-          Currently hosts Snowflake and Terraform structures side-by-side.
+          Currently hosts Snowflake, Terraform, and Azure structures side-by-side.
+          Layout: each column is separated by GAP pixels.
         */}
-        <MainCanvasRenderer width={5000} height={2000}>
-           {/* Snowflake: DB + Role diagram inside a single container box */}
-           {(dbData || dbError) && (
-             <SnowflakeContainerRenderer
-               dbData={dbData}
-               roleData={roleData}
-               dbError={dbError}
-               roleError={roleError}
-               rootX={0}
-               rootY={0}
-             />
-           )}
+        <MainCanvasRenderer width={9000} height={3000}>
+          <DynamicCanvasLayout gap={40}>
+            {/* Snowflake: DB + Role diagram */}
+            {(dbData || dbError) && (
+              <SnowflakeContainerRenderer
+                dbData={dbData}
+                roleData={roleData}
+                dbError={dbError}
+                roleError={roleError}
+                rootX={0}
+                rootY={0}
+              />
+            )}
 
-           {/* Terraform: right column (x=1500) */}
-           {terraformData && (
-             <TerraformClientRenderer dirData={terraformData} rootX={1500} rootY={0} />
-           )}
+            {/* Terraform */}
+            {terraformData && (
+              <TerraformClientRenderer dirData={terraformData} rootX={0} rootY={0} />
+            )}
 
-           {/* Azure Blob: further right column (x=3000) */}
-           {(azureBlobData || azureError) && (
-             <AzureBlobClientRenderer dbData={azureBlobData} azureError={azureError} rootX={3000} rootY={0} />
-           )}
+            {/* Azure Blob */}
+            {(azureBlobData || azureError) && (
+              <AzureBlobClientRenderer dbData={azureBlobData} azureError={azureError} rootX={0} rootY={0} />
+            )}
+          </DynamicCanvasLayout>
         </MainCanvasRenderer>
         <LogViewer />
       </main>
