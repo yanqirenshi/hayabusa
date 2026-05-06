@@ -162,15 +162,15 @@ function generateMarkdown(hierarchy) {
   }
   md += `\n`;
 
-  // LeafBoxNode subclasses sections
+  // LeafBoxNode section with ### subsections
+  md += `\n## LeafBoxNode\n\n`;
+  md += `\`LeafBoxNode\` は抽象クラスです。以下の具象クラスがインスタンス化されます。\n\n`;
   for (const leafChild of leafChildren) {
-    md += `\n## ${leafChild}\n\n`;
-    const cls = hierarchy[leafChild];
-    if (cls.length === 0) {
-      md += `file: src/core/models/BoxNode.ts\n\n`;
-    }
-    for (const c of cls) {
-      md += `### ${c.className}\n\n`;
+    md += `### ${leafChild}\n\n`;
+    md += `file: src/core/models/${leafChild}.ts\n\n`;
+    const classes = hierarchy[leafChild];
+    for (const c of classes) {
+      md += `#### ${c.className}\n\n`;
       md += `file: ${c.filePath}\n\n`;
       md += `${c.description || '説明なし'}\n\n`;
     }

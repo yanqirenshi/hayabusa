@@ -68,17 +68,19 @@ BoxNode (src/core/models/BoxNode.ts)
 | `tf-file` | Terraform File |
 
 
-## LeafBoxNodeDefault
+## LeafBoxNode
 
-file: src/core/models/BoxNode.ts
+`LeafBoxNode` は抽象クラスです。以下の具象クラスがインスタンス化されます。
 
+### LeafBoxNodeDefault
 
-## LeafBoxNodeRoleItem
+file: src/core/models/LeafBoxNodeDefault.ts
 
-file: src/core/models/BoxNode.ts
+### LeafBoxNodeRoleItem
 
+file: src/core/models/LeafBoxNodeRoleItem.ts
 
-## LeafBoxNodeTerraformItem
+### LeafBoxNodeTerraformItem
 
-file: src/core/models/BoxNode.ts
+file: src/core/models/LeafBoxNodeTerraformItem.ts
 
