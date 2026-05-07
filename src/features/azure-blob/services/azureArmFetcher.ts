@@ -106,6 +106,18 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
     parseInt(process.env.AZURE_ARM_MAX_PARALLEL || "8", 10) || 8
   );
 
+  // ARM SDK リトライ設定 (.env.local で上書き可能)
+  const armMaxRetries = parseInt(process.env.AZURE_ARM_MAX_RETRIES || "", 10);
+  const armRetryDelay = parseInt(process.env.AZURE_ARM_RETRY_DELAY_MS || "", 10);
+  const armMaxRetryDelay = parseInt(process.env.AZURE_ARM_MAX_RETRY_DELAY_MS || "", 10);
+  const retryOptions: Record<string, number> = {};
+  if (armMaxRetries >= 0) retryOptions.maxRetries = armMaxRetries;
+  if (armRetryDelay > 0) retryOptions.retryDelayInMs = armRetryDelay;
+  if (armMaxRetryDelay > 0) retryOptions.maxRetryDelayInMs = armMaxRetryDelay;
+  const armClientOptions = Object.keys(retryOptions).length > 0
+    ? { retryOptions }
+    : undefined;
+
   // 1. Collect all enabled subscriptions
   const enabledSubs: { id: string; name: string }[] = [];
   try {
@@ -120,10 +132,10 @@ export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
 
   // 2. For each subscription in parallel: list RGs, then list resources per RG in parallel
   const subResults = await parallelMap(enabledSubs, concurrency, async (sub) => {
-    const rgClient = new ResourceManagementClient(credential, sub.id);
-    const acrClient = new ContainerRegistryManagementClient(credential, sub.id);
-    const batchClient = new BatchManagementClient(credential, sub.id);
-    const adfClient = new DataFactoryManagementClient(credential, sub.id);
+    const rgClient = new ResourceManagementClient(credential, sub.id, armClientOptions);
+    const acrClient = new ContainerRegistryManagementClient(credential, sub.id, armClientOptions);
+    const batchClient = new BatchManagementClient(credential, sub.id, armClientOptions);
+    const adfClient = new DataFactoryManagementClient(credential, sub.id, armClientOptions);
 
     const rgNames: string[] = [];
     try {

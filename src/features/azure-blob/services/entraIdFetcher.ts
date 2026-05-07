@@ -9,6 +9,13 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
   const clientId = process.env.AZURE_CLIENT_ID;
   const clientSecret = process.env.AZURE_CLIENT_SECRET;
 
+  // AZURE_SKIP_ENTRA_ID=true で Entra ID (Graph API) のフェッチをスキップ
+  // User.Read.All / Group.Read.All の管理者同意が得られない場合に利用
+  if (process.env.AZURE_SKIP_ENTRA_ID === "true") {
+    Logger.info("[EntraID] AZURE_SKIP_ENTRA_ID=true のため、Entra ID のデータ取得をスキップします。");
+    return { users: [], groups: [], apps: [], tenantName: null };
+  }
+
   if (!tenantId || !clientId || !clientSecret || tenantId === "your_tenant_id") {
     Logger.error("[EntraID] Tenant/Client credentials are empty or invalid.");
     throw new Error("Azure Entra ID credentials (Tenant ID, Client ID, Secret) are not fully configured in .env.local.");
@@ -30,10 +37,14 @@ export async function fetchEntraIdUsersAndGroups(): Promise<{ users: AzureEntraU
     // Page size is configurable. Microsoft Graph allows $top up to 999.
     const pageSize = Math.max(1, Math.min(999, parseInt(process.env.AZURE_ENTRA_PAGE_SIZE || "100", 10) || 100));
 
+    // Entra ID fetch タイムアウト (.env.local で上書き可能、デフォルト 10000ms)
+    const entraTimeoutMs = parseInt(process.env.AZURE_ENTRA_TIMEOUT_MS || "", 10);
+    const fetchTimeout = entraTimeoutMs > 0 ? entraTimeoutMs : 10000;
+
     // Fire all 4 Graph endpoints in parallel; isolate failures so a single
     // permission gap doesn't tank the whole batch.
     const safeFetch = (url: string) =>
-      fetch(url, { headers }).catch((e) => {
+      fetch(url, { headers, signal: AbortSignal.timeout(fetchTimeout) }).catch((e) => {
         Logger.warn(`[EntraID] Network error fetching ${url}:`, e);
         return null as Response | null;
       });

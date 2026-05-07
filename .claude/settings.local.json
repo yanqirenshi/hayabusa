@@ -1,10 +1,23 @@
 {
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
+  },
   "permissions": {
     "allow": [
       "mcp__Claude_Preview__preview_start",
       "Bash(git checkout:*)",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(node --version)",
+      "PowerShell(npm install 2>&1)",
+      "PowerShell($r = Invoke-WebRequest -Uri http://localhost:3000/ -UseBasicParsing -TimeoutSec 30; \"status=$\\($r.StatusCode\\) size=$\\($r.Content.Length\\) hasH1=$\\($r.Content -match 'Hayabusa System Architecture'\\) hasCanvas=$\\($r.Content -match 'zoom-container'\\)\")",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 90; \"status=$\\($r.StatusCode\\) size=$\\($r.Content.Length\\)\" } catch { \"error: $_\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 120; \"status=$\\($r.StatusCode\\); hasH1=$\\($r.Content -match 'Hayabusa System Architecture'\\); hasSvg=$\\($r.Content -match '<svg'\\); hasSnowflakeDb=$\\($r.Content -match 'Snowflake'\\); hasMockSchema=$\\($r.Content -match '>RAW<'\\)\")",
+      "PowerShell(git checkout -- src/app/page.tsx src/features/snowflake/services/snowflakeFetcher.ts; git status)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} total=%{time_total}s\\\\n\" --max-time 600 http://localhost:3000/)",
+      "PowerShell(Measure-Command { try { Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 400 | Out-Null } catch { $_ | Out-Null } } | Select TotalSeconds)"
     ]
   }
 }

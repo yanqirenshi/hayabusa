@@ -38,6 +38,9 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
 
   const authenticator = (process.env.SNOWFLAKE_AUTHENTICATOR || "SNOWFLAKE").toUpperCase();
 
+  // retryTimeout: SDK デフォルト 300秒。env で上書き可能。
+  const retryTimeout = parseInt(process.env.SNOWFLAKE_RETRY_TIMEOUT || "", 10);
+
   const base: any = {
     account,
     username,
@@ -45,6 +48,7 @@ function buildConnectionOptions(extra?: { database?: string }): snowflake.Connec
     role: process.env.SNOWFLAKE_ROLE,
     warehouse: process.env.SNOWFLAKE_WAREHOUSE,
     ...(extra?.database ? { database: extra.database } : {}),
+    ...(retryTimeout >= 0 ? { retryTimeout } : {}),
   };
 
   if (authenticator === "SNOWFLAKE_JWT") {
