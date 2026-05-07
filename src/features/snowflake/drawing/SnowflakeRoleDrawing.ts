@@ -62,8 +62,9 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
     };
     for (const r of roles) byTier[r.tier].push(r);
 
-    const funcRoles = byTier.functional;
-    const sysRoles  = byTier.system;
+    const funcRoles   = byTier.functional;
+    const sysRoles    = byTier.system;
+    const customRoles = byTier.custom;
     const sysSet    = new Set(sysRoles.map(r => r.name));
 
     // ================================================================
@@ -143,7 +144,11 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
     const totalFuncW = funcColWidths.reduce((s, w) => s + w, 0)
       + CONFIG.nodeHGap * Math.max(0, funcColWidths.length - 1);
 
-    const maxContentW   = Math.max(totalFuncW, sysTreeTotalW, 300);
+    // Custom roles: flat row
+    const totalCustomW = customRoles.reduce((s, r) => s + this.nodeWidth(r.name), 0)
+      + CONFIG.nodeHGap * Math.max(0, customRoles.length - 1);
+
+    const maxContentW   = Math.max(totalFuncW, totalCustomW, sysTreeTotalW, 300);
     const contentStartX = CONFIG.bandLabelWidth + CONFIG.bandLabelGap;
     const totalW        = contentStartX + maxContentW + CONFIG.diagramPaddingRight;
 
@@ -288,6 +293,41 @@ export class SnowflakeRoleDrawing implements IDrawingClass {
           this.edges.push({
             id: `edge-${sr.name}__${kid.name}`,
             fromNodeId: sNodeId,
+            toNodeId: `role-${kid.name}`,
+          });
+        }
+      }
+    }
+
+    // ================================================================
+    // === Phase 6: Custom nodes — flat row                          ===
+    // ================================================================
+    if (tierY.has("custom") && customRoles.length > 0) {
+      const customTierTopY = tierY.get("custom")!;
+      const customTotalW = customRoles.reduce((s, r) => s + this.nodeWidth(r.name), 0)
+        + CONFIG.nodeHGap * (customRoles.length - 1);
+      let cx = contentStartX + (maxContentW - customTotalW) / 2;
+
+      for (const cr of customRoles) {
+        const crId = `role-${cr.name}`;
+        const crW = this.nodeWidth(cr.name);
+        pushNode({
+          id: crId,
+          x: cx,
+          y: customTierTopY + CONFIG.nodePaddingV,
+          width: crW,
+          height: CONFIG.nodeHeight,
+          label: cr.name,
+          type: "role-node-custom",
+          data: cr,
+        });
+        cx += crW + CONFIG.nodeHGap;
+
+        // Edges from custom → children (if any)
+        for (const kid of childrenOf.get(cr.name) ?? []) {
+          this.edges.push({
+            id: `edge-${cr.name}__${kid.name}`,
+            fromNodeId: crId,
             toNodeId: `role-${kid.name}`,
           });
         }
