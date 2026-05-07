@@ -97,6 +97,12 @@ async function listAdfsInRg(
 }
 
 export async function fetchAzureArmResources(): Promise<AzureSubscription[]> {
+  // AZURE_SKIP_ARM=true で ARM リソース取得をスキップ
+  if (process.env.AZURE_SKIP_ARM === "true") {
+    Logger.info("[ARM] AZURE_SKIP_ARM=true のため、ARM リソースの取得をスキップします。");
+    return [];
+  }
+
   const credential = new DefaultAzureCredential();
   const subClient = new SubscriptionClient(credential);
 

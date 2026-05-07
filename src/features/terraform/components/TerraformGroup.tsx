@@ -24,7 +24,10 @@ export default function TerraformGroup({ node, rootX, rootY, depth = 0, onNodeCl
       <g 
         key={node.id}
         transform={`translate(${rootX}, ${rootY})`} 
-        onClick={() => onNodeClick && onNodeClick(node)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onNodeClick && onNodeClick(node);
+        }}
         style={{ cursor: "pointer" }}
       >
         {/* Outer box */}
